@@ -1,0 +1,17 @@
+{
+    "name": "tui-calendar-pwa",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+      "dev": "vite",
+      "build": "vite build",
+      "preview": "vite preview"
+    },
+    "dependencies": {
+      "tui-calendar": "^2.1.3"
+    },
+    "devDependencies": {
+      "vite": "^5.0.0",
+      "@vite-pwa/plugin": "^0.17.5"
+    }
+  }
