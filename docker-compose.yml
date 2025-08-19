@@ -2,11 +2,32 @@ version: "3.9"
  
 services:
   web:
-    build: .
+    container_name: pwa-scheduler-web
+    hostname: pwa-scheduler-web
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "5173:5173"
     volumes:
       - ./src:/app/src
       - ./public:/app/public
       - /app/node_modules
+      - ./.env:/app/.env:ro
+    environment:
+      - NODE_ENV=development
     command: npm run dev
+    # Add host networking for HMR to work properly
+    networks:
+      - app-network
+    # Add container healthcheck
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5173', (r) => r.statusCode !== 200 ? process.exit(1) : process.exit(0))"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 5s
+
+networks:
+  app-network:
+    driver: bridge

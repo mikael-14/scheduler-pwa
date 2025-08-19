@@ -1,34 +1,39 @@
-import { defineConfig } from "vite";
-import { VitePWA } from "@vite-pwa/plugin";
- 
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { VitePWA } from 'vite-plugin-pwa'
+
 export default defineConfig({
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    watch: {
+      usePolling: true
+    }
+  },
   plugins: [
+    vue(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: 'autoUpdate',
       manifest: {
-        name: "Tui Calendar PWA",
-        short_name: "TuiCalendar",
-        start_url: ".",
-        display: "standalone",
-        background_color: "#ffffff",
-        theme_color: "#317EFB",
+        name: 'PWA Scheduler',
+        short_name: 'Scheduler',
+        theme_color: '#4DBA87',
         icons: [
-          { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }
+          {
+            src: '/img/icons/icon-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: '/img/icons/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
         ]
       },
       workbox: {
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/uicdn\.toast\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "tui-calendar-cdn",
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 }
-            }
-          }
-        ]
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       }
     })
   ]
-});
+})
