@@ -1,24 +1,42 @@
 <template>
   <div id="app">
-    <h1>PWA Scheduler</h1>
+    <Login v-if="!isAuthenticated" />
+    <div v-else>
+      <header>
+        <h1>PWA Scheduler</h1>
+        <button @click="logout">Logout</button>
+      </header>
+      <!-- Your scheduler content here -->
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, ref, onMounted } from 'vue'
+import Login from './components/Login.vue'
+import { authService } from './services/auth'
 
 export default defineComponent({
-  name: 'App'
+  name: 'App',
+  components: {
+    Login
+  },
+  setup() {
+    const isAuthenticated = ref(false);
+
+    onMounted(() => {
+      isAuthenticated.value = authService.isAuthenticated();
+    });
+
+    const logout = () => {
+      authService.logout();
+      isAuthenticated.value = false;
+    };
+
+    return {
+      isAuthenticated,
+      logout
+    }
+  }
 })
 </script>
-
-<style>
-#app {
-  font-family: Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>

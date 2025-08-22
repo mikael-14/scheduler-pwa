@@ -14,6 +14,9 @@ RUN npm install && npm cache clean --force
 # Copy rest of the application
 COPY . .
 
+# Add environment variable for Vite
+ENV VITE_HOST=0.0.0.0
+
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:5173', (r) => r.statusCode !== 200 ? process.exit(1) : process.exit(0))"

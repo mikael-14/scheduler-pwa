@@ -12,15 +12,14 @@ services:
     volumes:
       - ./src:/app/src
       - ./public:/app/public
-      - /app/node_modules
       - ./.env:/app/.env:ro
     environment:
       - NODE_ENV=development
+      - VITE_HOST=0.0.0.0
+    restart: unless-stopped
     command: npm run dev
-    # Add host networking for HMR to work properly
     networks:
       - app-network
-    # Add container healthcheck
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:5173', (r) => r.statusCode !== 200 ? process.exit(1) : process.exit(0))"]
       interval: 30s

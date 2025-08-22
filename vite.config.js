@@ -4,10 +4,13 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   server: {
-    host: '0.0.0.0',
+    host: true,
     port: 5173,
     watch: {
       usePolling: true
+    },
+    hmr: {
+      overlay: true
     }
   },
   plugins: [
@@ -18,6 +21,9 @@ export default defineConfig({
         name: 'PWA Scheduler',
         short_name: 'Scheduler',
         theme_color: '#4DBA87',
+        start_url: '/',
+        display: 'standalone',
+        background_color: '#ffffff',
         icons: [
           {
             src: '/img/icons/icon-192x192.png',
@@ -32,8 +38,35 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/api\.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+              }
+            }
+          }
+        ]
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
       }
     })
-  ]
+  ],
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['vue']
+        }
+      }
+    }
+  }
 })

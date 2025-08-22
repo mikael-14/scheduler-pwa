@@ -46,6 +46,12 @@ pwa-scheduler
 - Access the application at `http://localhost:5173`.
 - The application supports offline functionality and can be installed as a PWA.
 
+### SSH
+
+```
+docker exec -it pwa-scheduler sh
+```
+
 ## Contributing
 Feel free to submit issues or pull requests for improvements and bug fixes.
 
