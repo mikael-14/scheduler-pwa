@@ -49,7 +49,7 @@ pwa-scheduler
 ### SSH
 
 ```
-docker exec -it pwa-scheduler sh
+docker exec -it pwa-scheduler-web sh
 ```
 
 ## Contributing

@@ -1,9 +1,14 @@
+/// <reference types="vite/client" />
+
 import axios from 'axios';
 import { jwtUtils } from './jwt';
 
+const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL
+  baseURL: apiUrl
 });
+
 
 axiosInstance.interceptors.request.use(config => {
   const token = jwtUtils.getToken();

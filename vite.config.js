@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  base: './',
   server: {
     host: true,
     port: 5173,
@@ -60,7 +61,9 @@ export default defineConfig({
     })
   ],
   build: {
-    sourcemap: true,
+    target: 'esnext',
+    outDir: 'dist',
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
