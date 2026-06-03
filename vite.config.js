@@ -1,30 +1,27 @@
 import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import vue from '@vitejs/plugin-vue'// Swap this out for react() if you're using React!
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  base: './',
-  server: {
-    host: true,
-    port: 5173,
-    watch: {
-      usePolling: true
-    },
-    hmr: {
-      overlay: true
-    }
-  },
   plugins: [
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: [
+        'favicon.ico',
+        'apple-touch-icon.png',
+        'masked-icon.svg',
+        'img/icons/icon-192x192.png',
+        'img/icons/icon-512x512.png'
+      ],
       manifest: {
-        name: 'PWA Scheduler',
+        name: 'Scheduler PWA',
         short_name: 'Scheduler',
-        theme_color: '#4DBA87',
-        start_url: '/',
+        description: 'Mobile-friendly schedule coordinator',
+        theme_color: '#f59e0b',
+        background_color: '#0f172a',
         display: 'standalone',
-        background_color: '#ffffff',
+        orientation: 'portrait',
         icons: [
           {
             src: '/img/icons/icon-192x192.png',
@@ -35,41 +32,61 @@ export default defineConfig({
             src: '/img/icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png'
+          },
+          {
+            src: '/img/icons/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/api\.*/i,
+            urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365
+              }
+            }
+          },
+          {
+            urlPattern: /^\/api\/.*$/,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
+              networkTimeoutSeconds: 10,
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24
+              }
+            }
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'image-cache',
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24 * 30
               }
             }
           }
         ]
       },
       devOptions: {
-        enabled: true,
-        type: 'module'
+        enabled: true
       }
     })
   ],
-  build: {
-    target: 'esnext',
-    outDir: 'dist',
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vendor': ['vue']
-        }
-      }
-    }
+  server: {
+    host: '0.0.0.0', // Handled properly inside your docker container network configurations
+    port: 5173
   }
 })
