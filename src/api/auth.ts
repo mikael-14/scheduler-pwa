@@ -1,6 +1,6 @@
 import axiosInstance from '../config/axios';
 import { useAuthStore } from '../stores/auth';
-import type { LoginCredentials, RegisterCredentials, AuthResponse } from '../types/auth';
+import type { LoginCredentials, RegisterCredentials, AuthResponse, User } from '../types/auth';
 
 export const authApi = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -37,6 +37,13 @@ export const authApi = {
 
   async getCurrentUser() {
     const response = await axiosInstance.get('/user');
+    const authStore = useAuthStore();
+    authStore.setUser(response.data);
+    return response.data;
+  },
+
+  async updateProfile(data: Partial<User>) {
+    const response = await axiosInstance.patch('/user', data);
     const authStore = useAuthStore();
     authStore.setUser(response.data);
     return response.data;

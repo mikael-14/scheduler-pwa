@@ -40,6 +40,14 @@
               </div>
             </div>
 
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Language</label>
+              <select v-model="profile.language" class="block w-full rounded-lg border-slate-300 bg-white px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:text-sm">
+                <option value="pt">Português</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+
             <div class="flex justify-end pt-4">
               <button type="submit" :disabled="loading" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
                 Save Changes
@@ -89,6 +97,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { authApi } from '../api/auth'
 import { CameraIcon } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
@@ -97,7 +106,8 @@ const user = authStore.user
 const loading = ref(false)
 const profile = reactive({
   name: user?.name || '',
-  email: user?.email || ''
+  email: user?.email || '',
+  language: user?.language || 'pt'
 })
 
 const passwords = reactive({
@@ -109,7 +119,12 @@ const passwords = reactive({
 const updateProfile = async () => {
   loading.value = true
   try {
-    // API Call would go here
+    const updatedUser = await authApi.updateProfile({
+      name: profile.name,
+      email: profile.email,
+      language: profile.language
+    })
+    authStore.setUser(updatedUser)
     alert('Profile updated successfully!')
   } catch (error) {
     alert('Failed to update profile.')

@@ -4,10 +4,11 @@ const routes = [
   { path: '/', name: 'Home', component: () => import('../views/Home.vue') },
   { path: '/login', name: 'Login', component: () => import('../components/Login.vue') },
   { path: '/register', name: 'Register', component: () => import('../views/Register.vue') },
-  { path: '/calendar/:categoryId', name: 'Calendar', component: () => import('../views/CalendarView.vue'), props: true },
+  { path: '/my-agenda/', name: 'My Agenda', component: () => import('../views/MyAgenda.vue'), props: true },
+  { path: '/agenda/:categoryId', name: 'Agenda', component: () => import('../views/Agenda.vue'), props: true },
+  { path: '/notifications', name: 'Notifications', component: () => import('../views/Notifications.vue') },
   { path: '/profile', name: 'Profile', component: () => import('../views/Profile.vue') },
   { path: '/settings', name: 'Settings', component: () => import('../views/Settings.vue') },
-  { path: '/share/:categoryId', name: 'Share', component: () => import('../views/ShareView.vue'), props: true },
 ]
 
 const router = createRouter({

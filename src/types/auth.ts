@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   avatar_url?: string;
+  language?: 'pt' | 'en';
 }
 
 export interface LoginCredentials {
