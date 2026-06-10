@@ -1,17 +1,17 @@
 /// <reference types="vite/client" />
 
 import axios from 'axios';
-import { jwtUtils } from './jwt';
+import { useAuthStore } from '../stores/auth';
 
-const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const apiUrl = import.meta.env.VITE_API_URL ?? "https://localhost:9443/api";
 
 const axiosInstance = axios.create({
   baseURL: apiUrl
 });
 
-
 axiosInstance.interceptors.request.use(config => {
-  const token = jwtUtils.getToken();
+  const authStore = useAuthStore();
+  const token = authStore.token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -22,8 +22,9 @@ axiosInstance.interceptors.response.use(
   response => response,
   async error => {
     if (error.response?.status === 401) {
-      jwtUtils.removeToken();
-      window.location.reload();
+      const authStore = useAuthStore();
+      authStore.logout();
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
