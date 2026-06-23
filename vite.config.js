@@ -86,6 +86,14 @@ export default defineConfig({
   ],
   server: {
     host: '0.0.0.0', // Handled properly inside your docker container network configurations
-    port: 5173
-  }
+    port: 5173,
+    proxy: {
+      // Whenever your PWA fetches something starting with '/api'
+      '/api': {
+        target: 'https://localhost:9443', // Your Filament Docker app
+        changeOrigin: true,
+        secure: false, // Allows self-signed SSL certificates on localhost
+      },
+    },
+  },
 })

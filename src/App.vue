@@ -1,8 +1,10 @@
 <template>
   <div :class="{ 'dark': isDark }">
-    <div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-primary-500/30">
+    <div
+      class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-primary-500/30">
       <!-- Desktop Sidebar -->
-      <aside class="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col bg-white transition-transform dark:border-slate-800 dark:bg-slate-900 lg:flex">
+      <aside v-if="authStore.isAuthenticated()"
+        class="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col bg-white transition-transform dark:border-slate-800 dark:bg-slate-900 lg:flex">
         <div class="flex h-16 items-center border-b border-slate-200 px-6 dark:border-slate-800">
           <router-link to="/" class="flex items-center gap-2 font-bold text-primary-600 dark:text-primary-500">
             <span class="text-2xl">📅</span>
@@ -18,7 +20,8 @@
           <NavItem to="/settings" icon="Cog6ToothIcon">Settings</NavItem>
         </nav>
         <div class="border-t border-slate-200 p-4 dark:border-slate-800">
-          <button @click="logout" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100">
+          <button @click="logout"
+            class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100">
             <ArrowRightOnRectangleIcon class="h-5 w-5" />
             Logout
           </button>
@@ -26,38 +29,37 @@
       </aside>
 
       <!-- Top Bar -->
-      <header class="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900 ">
+      <header v-if="authStore.isAuthenticated()"
+        class="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900 ">
         <button @click="isMobileMenuOpen = true" class="text-slate-500 dark:text-slate-400">
           <Bars3Icon class="h-6 w-6" />
         </button>
-        <router-link to="/" class="text-lg font-bold text-primary-600 dark:text-primary-500 lg:hidden">Scheduler</router-link>
+        <router-link to="/"
+          class="text-lg font-bold text-primary-600 dark:text-primary-500 lg:hidden">Scheduler</router-link>
         <div class="flex items-center gap-2">
-          <div class="relative flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 text-sm text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-            <button
-              type="button"
-              @click="languageMenuOpen = !languageMenuOpen"
+          <div
+            class="relative flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 text-sm text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            <button type="button" @click="languageMenuOpen = !languageMenuOpen"
               class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-              aria-label="Change language"
-            >
+              aria-label="Change language">
               <GlobeAltIcon class="h-5 w-5" />
             </button>
-            <div v-if="languageMenuOpen" class="absolute right-0 top-full z-50 mt-2 w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            <div v-if="languageMenuOpen"
+              class="absolute right-0 top-full z-50 mt-2 w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
               <template v-for="option in languageOptions" :key="option.value">
-                <button
-                  type="button"
-                  @click="selectLanguage(option.value)"
-                  class="flex w-full items-center justify-between gap-2 px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
+                <button type="button" @click="selectLanguage(option.value)"
+                  class="flex w-full items-center justify-between gap-2 px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
                   <span>{{ option.label }}</span>
                   <span v-if="selectedLanguage === option.value" class="text-primary-600 dark:text-primary-400">✓</span>
                 </button>
               </template>
             </div>
           </div>
-           <button class="p-2 text-slate-500 dark:text-slate-400" @click="toggleDarkMode">
+          <button class="p-2 text-slate-500 dark:text-slate-400" @click="toggleDarkMode">
             <component :is="isDark ? SunIcon : MoonIcon" class="h-5 w-5" />
           </button>
-          <router-link to="/profile" class="h-8 w-8 overflow-hidden rounded-full border border-slate-200 dark:border-slate-700">
+          <router-link to="/profile"
+            class="h-8 w-8 overflow-hidden rounded-full border border-slate-200 dark:border-slate-700">
             <img :src="user?.avatar_url || 'https://ui-avatars.com/api/?name=' + (user?.name || 'User')" alt="Avatar" />
           </router-link>
         </div>
@@ -66,9 +68,10 @@
       <!-- Mobile Menu Overlay -->
       <div v-if="isMobileMenuOpen" class="fixed inset-0 z-[60] lg:hidden">
         <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" @click="isMobileMenuOpen = false"></div>
-        <nav class="fixed inset-y-0 left-0 w-64 bg-white p-4 dark:bg-slate-900">
+        <nav v-if="authStore.isAuthenticated()" class="fixed inset-y-0 left-0 w-64 bg-white p-4 dark:bg-slate-900">
           <div class="flex items-center justify-between mb-8">
-             <router-link to="/" class="flex items-center gap-2 font-bold text-primary-600 dark:text-primary-500" @click="isMobileMenuOpen = false">
+            <router-link to="/" class="flex items-center gap-2 font-bold text-primary-600 dark:text-primary-500"
+              @click="isMobileMenuOpen = false">
               <span class="text-xl">📅</span>
               <span>Scheduler</span>
             </router-link>
@@ -85,7 +88,8 @@
             <NavItem to="/settings" icon="Cog6ToothIcon" @click="isMobileMenuOpen = false">Settings</NavItem>
           </div>
           <div class="absolute bottom-4 left-4 right-4 border-t border-slate-200 pt-4 dark:border-slate-800">
-             <button @click="logout" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+            <button @click="logout"
+              class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
               <ArrowRightOnRectangleIcon class="h-5 w-5" />
               Logout
             </button>
@@ -94,31 +98,37 @@
       </div>
 
       <!-- Main Content Area -->
-      <main class="lg:pl-64">
+      <main :class="authStore.isAuthenticated() ? 'lg:pl-64' : ''">
         <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <router-view />
         </div>
       </main>
 
       <!-- Mobile Bottom Navigation (Optional but often better for PWAs) -->
-      <nav class="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white px-2 dark:border-slate-800 dark:bg-slate-900 lg:hidden">
-        <router-link to="/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400" active-class="text-primary-600 dark:text-primary-500">
+      <nav v-if="authStore.isAuthenticated()"
+        class="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white px-2 dark:border-slate-800 dark:bg-slate-900 lg:hidden">
+        <router-link to="/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
+          active-class="text-primary-600 dark:text-primary-500">
           <HomeIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">Home</span>
         </router-link>
-        <router-link to="/my-agenda/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400" active-class="text-primary-600 dark:text-primary-500">
+        <router-link to="/my-agenda/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
+          active-class="text-primary-600 dark:text-primary-500">
           <CalendarIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">My Agenda</span>
         </router-link>
-        <router-link to="/agenda/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400" active-class="text-primary-600 dark:text-primary-500">
+        <router-link to="/agenda/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
+          active-class="text-primary-600 dark:text-primary-500">
           <CalendarDaysIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">Agenda</span>
         </router-link>
-        <router-link to="/notifications" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400" active-class="text-primary-600 dark:text-primary-500">
+        <router-link to="/notifications" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
+          active-class="text-primary-600 dark:text-primary-500">
           <BellIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">Notifications</span>
         </router-link>
-         <router-link to="/settings" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400" active-class="text-primary-600 dark:text-primary-500">
+        <router-link to="/settings" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
+          active-class="text-primary-600 dark:text-primary-500">
           <Cog6ToothIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">Settings</span>
         </router-link>
@@ -133,14 +143,14 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { authApi } from './api/auth'
 import { useDark } from '@vueuse/core'
-import { 
-  HomeIcon, 
-  CalendarIcon, 
+import {
+  HomeIcon,
+  CalendarIcon,
   CalendarDaysIcon,
   BellIcon,
-  Cog6ToothIcon, 
-  Bars3Icon, 
-  XMarkIcon, 
+  Cog6ToothIcon,
+  Bars3Icon,
+  XMarkIcon,
   ArrowRightOnRectangleIcon,
   SunIcon,
   MoonIcon,
@@ -149,7 +159,7 @@ import {
 import { NavItem } from './components/common'
 
 const authStore = useAuthStore()
-const user = authStore.user
+const user = computed(() => authStore.user)
 const router = useRouter()
 const isMobileMenuOpen = ref(false)
 const languageMenuOpen = ref(false)
@@ -235,9 +245,11 @@ body {
 ::-webkit-scrollbar {
   width: 5px;
 }
+
 ::-webkit-scrollbar-track {
   @apply bg-transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-300 dark:bg-slate-700 rounded-full;
 }
