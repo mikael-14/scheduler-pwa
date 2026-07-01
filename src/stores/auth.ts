@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import { useSchedulesStore } from './schedules'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
@@ -22,6 +23,11 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = t
   }
   function logout() {
+    // Clear other stores that hold user-specific data
+    const schedulesStore = useSchedulesStore()
+    schedulesStore.clearEvents()
+
+    // Clear auth state
     user.value = null
     token.value = null
   }

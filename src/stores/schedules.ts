@@ -55,5 +55,11 @@ export const useSchedulesStore = defineStore('schedules', () => {
     }
   }
 
-  return { events, loading, error, fetchEvents, addEvent, updateEvent, deleteEvent }
+  function clearEvents() {
+    events.value = []
+    error.value = null
+    loading.value = false
+  }
+
+  return { events, loading, error, fetchEvents, addEvent, updateEvent, deleteEvent, clearEvents }
 })

@@ -42,6 +42,12 @@ export default defineConfig({
         ]
       },
       workbox: {
+        // This is the key addition. It tells the service worker that
+        // any navigation to a URL starting with /auth/ is a valid app route
+        // and should be handled by serving the index.html (app shell).
+        navigateFallbackAllowlist: [
+          /^\/auth\//,
+        ],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,

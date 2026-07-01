@@ -15,6 +15,70 @@
     }
   ],
   "paths": {
+    "/pwa/subscribe": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "endpoint": {
+                    "type": "string"
+                  },
+                  "keys": {
+                    "type": "object",
+                    "properties": {
+                      "auth": {
+                        "type": "string"
+                      },
+                      "p256dh": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "auth",
+                      "p256dh"
+                    ]
+                  }
+                },
+                "required": [
+                  "endpoint",
+                  "keys"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationException"
+          }
+        }
+      }
+    },
     "/user": {
       "get": {
         "responses": {
@@ -310,11 +374,96 @@
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateScheduleRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateScheduleRequest"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "end": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "format": "date-time"
+                      },
+                      "all_day": {
+                        "type": "boolean"
+                      },
+                      "description": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "internal_note": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "status": {
+                        "$ref": "#/components/schemas/ScheduleStatus"
+                      },
+                      "user_id": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "schedule_type_id": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "schedule_users": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "schedule_id": {
+                              "type": "integer"
+                            },
+                            "user_id": {
+                              "type": "integer"
+                            },
+                            "status": {
+                              "$ref": "#/components/schemas/ScheduleStatus"
+                            },
+                            "description": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "schedule_id",
+                            "user_id",
+                            "status"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "start",
+                      "all_day",
+                      "status"
+                    ]
+                  }
+                ]
               }
             }
           }
@@ -614,11 +763,22 @@
           }
         ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateScheduleRequest"
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateScheduleRequest"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "schedule_users": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
@@ -775,6 +935,35 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "schedule_users": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "user_id": {
+                  "type": "integer"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/ScheduleStatus"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "user_id",
+                "status",
+                "description"
+              ]
+            }
           }
         },
         "required": [
@@ -789,7 +978,8 @@
           "schedule_type_id",
           "created_at",
           "updated_at",
-          "deleted_at"
+          "deleted_at",
+          "schedule_users"
         ],
         "title": "ScheduleTransformer"
       },

@@ -207,8 +207,17 @@ watch(isDark, (val) => {
 })
 
 const logout = async () => {
-  await authApi.logout()
-  router.push('/login')
+  try {
+    await authApi.logout()
+    // Using router.replace prevents the user from using the browser's back button
+    // to return to the authenticated state after logging out.
+    router.replace('/login')
+  } catch (error) {
+    console.error('Logout failed:', error)
+    // Even if API call fails, force a local logout and redirect
+    authStore.logout()
+    router.replace('/login')
+  }
 }
 
 onMounted(() => {
