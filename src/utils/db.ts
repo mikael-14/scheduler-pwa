@@ -40,3 +40,30 @@ export const scheduleDB = {
     return db.clear(STORE_NAME);
   }
 };
+
+export const scheduleTypeDB = {
+  async getAll() {
+    const db = await initDB();
+    return db.getAll(STORE_NAME);
+  },
+  async put(scheduleType: any) {
+    const db = await initDB();
+    return db.put(STORE_NAME, scheduleType);
+  },
+  async putAll(scheduleTypes: any[]) {
+    const db = await initDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    for (const scheduleType of scheduleTypes) {
+      tx.store.put(scheduleType);
+    }
+    await tx.done;
+  },
+  async delete(id: number | string) {
+    const db = await initDB();
+    return db.delete(STORE_NAME, id);
+  },
+  async clear() {
+    const db = await initDB();
+    return db.clear(STORE_NAME);
+  }
+};

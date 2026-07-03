@@ -1,12 +1,30 @@
 <template>
   <div class="space-y-6">
-    <!-- Header Card -->
     <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p class="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Scheduler</p>
-          <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Weekly View</h1>
+          <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{{ currentViewTitle }}</h1>
         </div>
+
+        <div class="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800 self-start sm:self-auto">
+          <button 
+            @click="changeView('dayGridMonth')" 
+            :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', currentView === 'dayGridMonth' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']">
+            Month
+          </button>
+          <button 
+            @click="changeView('timeGridWeek')" 
+            :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', currentView === 'timeGridWeek' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']">
+            Week
+          </button>
+          <button 
+            @click="changeView('timeGridDay')" 
+            :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', currentView === 'timeGridDay' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']">
+            Day
+          </button>
+        </div>
+        
         <div class="flex items-center gap-2">
           <button @click="goPrev" class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
             <ChevronLeftIcon class="h-5 w-5" />
@@ -24,8 +42,8 @@
             <CalendarIcon class="h-5 w-5" />
           </div>
           <div>
-            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Current Week</p>
-            <p class="text-sm font-bold text-slate-900 dark:text-white">{{ weekRange }}</p>
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Current Scope</p>
+            <p class="text-sm font-bold text-slate-900 dark:text-white">{{ dateHeading }}</p>
           </div>
         </div>
         <button @click="openCreateModal" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100">
@@ -35,27 +53,14 @@
       </div>
     </div>
 
-    <!-- Calendar Card -->
     <div class="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
       <FullCalendar
         ref="calendarRef"
-        :plugins="plugins"
-        :initialView="initialView"
-        :events="store.events"
-        :headerToolbar="false"
-        :allDaySlot="false"
-        :slotMinTime="'07:00:00'"
-        :slotMaxTime="'21:00:00'"
-        :slotDuration="'00:30:00'"
-        :expandRows="true"
-        :height="'auto'"
-        :nowIndicator="true"
+        :options="calendarOptions"
         class="filament-calendar"
-        @eventClick="handleEventClick"
       />
     </div>
 
-    <!-- Loading Overlay -->
     <div v-if="store.loading" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-[2px]">
       <div class="rounded-xl bg-white p-4 shadow-xl dark:bg-slate-800">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
@@ -67,8 +72,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid' // Added month layout support
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
+import listPlugin from '@fullcalendar/list';
 import { 
   ChevronLeftIcon, 
   ChevronRightIcon, 
@@ -79,12 +86,48 @@ import { useSchedulesStore } from '../stores/schedules'
 
 const store = useSchedulesStore()
 const calendarRef = ref<any>(null)
-const plugins = [timeGridPlugin, interactionPlugin]
-const initialView = 'timeGridWeek'
 
 const currentDate = ref(new Date())
+const currentView = ref('timeGridWeek')
 
-const weekRange = computed(() => {
+// All configurations must live here for FullCalendar Vue 3
+const calendarOptions = computed(() => ({
+  plugins: [listPlugin, dayGridPlugin, timeGridPlugin, interactionPlugin],
+  initialView: 'listWeek',
+  events: store.events,
+  headerToolbar: false, // Disables original buttons since you built beautiful custom ones
+  allDaySlot: false,
+  slotMinTime: '07:00:00',
+  slotMaxTime: '21:00:00',
+  slotDuration: '00:30:00',
+  expandRows: true,
+  height: 'auto',
+  nowIndicator: true,
+  eventClick: handleEventClick
+}))
+
+// Changes the text of the main header depending on which view is selected
+const currentViewTitle = computed(() => {
+  switch (currentView.value) {
+    case 'dayGridMonth': return 'Month View'
+    case 'timeGridDay': return 'Daily View'
+    case 'timeGridWeek':
+    default:
+      return 'Weekly View'
+  }
+})
+
+// Dynamically computes current scope label depending on view context
+const dateHeading = computed(() => {
+  if (currentView.value === 'dayGridMonth') {
+    return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentDate.value)
+  }
+
+  if (currentView.value === 'timeGridDay') {
+    return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }).format(currentDate.value)
+  }
+
+  // Fallback to original week calculation
   const start = new Date(currentDate.value)
   start.setDate(currentDate.value.getDate() - ((currentDate.value.getDay() + 6) % 7))
   const end = new Date(start)
@@ -100,40 +143,52 @@ const weekRange = computed(() => {
   }).format(end)
 })
 
-const updateDate = () => {
+const updateDateAndView = () => {
   const api = calendarRef.value?.getApi()
   if (api) {
     currentDate.value = api.getDate()
+    currentView.value = api.view.type
+  }
+}
+
+// Controls shifting views via the custom tab buttons
+const changeView = (viewName: string) => {
+  const api = calendarRef.value?.getApi()
+  if (api) {
+    api.changeView(viewName)
+    updateDateAndView()
   }
 }
 
 const goPrev = () => {
   calendarRef.value?.getApi().prev()
-  updateDate()
+  updateDateAndView()
 }
 
 const goNext = () => {
   calendarRef.value?.getApi().next()
-  updateDate()
+  updateDateAndView()
 }
 
 const goToday = () => {
   calendarRef.value?.getApi().today()
-  updateDate()
+  updateDateAndView()
 }
 
 const openCreateModal = () => {
-  // TODO: Implement create modal
   alert('Create event functionality coming soon!')
 }
 
 const handleEventClick = (info: any) => {
-  // TODO: Implement edit modal
   alert(`Event: ${info.event.title}`)
 }
 
 onMounted(() => {
   store.fetchEvents()
+  // Wait a split second for FullCalendar to paint before parsing current views
+  setTimeout(() => {
+    updateDateAndView()
+  }, 100)
 })
 </script>
 
@@ -169,6 +224,11 @@ onMounted(() => {
 
 .fc-timegrid-slot-label-cushion {
   @apply text-xs font-medium text-slate-400 dark:text-slate-500 !important;
+}
+
+/* DayGrid Month-view specific layout overrides */
+.fc-daygrid-day-number {
+  @apply text-xs font-bold p-2 text-slate-600 dark:text-slate-400 no-underline !important;
 }
 
 .fc-event {
