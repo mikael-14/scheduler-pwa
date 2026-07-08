@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import createRouter from './router' // Import the factory function
 import './styles/tailwind.css'
+import { authApi } from './api/auth'
 import { useAuthStore } from './stores/auth'
 
 const pinia = createPinia()
@@ -18,11 +19,18 @@ async function initializeApp() {
 
   if (url.pathname === '/auth/callback' && token) {
     const authStore = useAuthStore()
-    authStore.setToken(token)
-    // The token is now in storage. We can clean up the URL
-    // and redirect to a safe page before mounting the app.
-    // The router guard will then pick up the authenticated state.
-    window.history.replaceState({}, document.title, '/my-agenda/')
+    try {
+      authStore.setToken(token)
+      // Immediately fetch the user to populate the store with their details,
+      // including approval status. This prevents being incorrectly redirected
+      // to the pending approval page.
+      await authApi.getCurrentUser()
+    } catch (error) {
+      console.error('Failed to process social auth token:', error)
+      authStore.clear() // Clear bad token
+    }
+    // Clean the token from the URL and redirect to the home page.
+    window.history.replaceState({}, document.title, '/')
   }
 
   // Now that auth state is potentially set, create and use the router.

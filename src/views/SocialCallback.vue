@@ -1,38 +1,23 @@
 <template>
-  <div class="callback-loading">
-    <p>Finalizing login, please wait...</p>
+  <div class="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+    <div class="text-center">
+      <div class="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-600 text-3xl text-white shadow-lg shadow-primary-500/20">
+        <div class="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
+      </div>
+      <p class="mt-4 font-semibold text-slate-700 dark:text-slate-300">Finalizing login, please wait...</p>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import { authApi } from '@/api/auth';
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
-const route = useRoute();
-const router = useRouter();
-const authStore = useAuthStore();
+const router = useRouter()
 
-// The token is now handled in main.ts before this component is even mounted.
-// This component's main job is now to fetch the user and redirect.
 onMounted(async () => {
-  if (authStore.isAuthenticated()) {
-    try {
-      // Request the current user's details using the token already in the store
-      await authApi.getCurrentUser();
-      // Redirect to home and let the router guard figure out the next step.
-      // This prevents unapproved users from hitting a protected route
-      // directly and seeing a blank page.
-      router.push({ name: 'Home' });
-    } catch (error) {
-      console.error('Failed to fetch user after social login:', error);
-      router.push('/login?error=social_failed');
-    }
-  } else {
-    // This case should ideally not be hit if main.ts works correctly
-    console.error('Social callback page was reached without an authenticated state.');
-    router.push('/login?error=auth_error');
-  }
-});
+  // The main logic is now in main.ts. This component just acts as a loading screen.
+  // If the user lands here directly, we'll send them home after a moment.
+  setTimeout(() => router.replace({ name: 'Home' }), 1000)
+})
 </script>

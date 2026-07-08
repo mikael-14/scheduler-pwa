@@ -36,9 +36,12 @@ export const authApi = {
   },
 
   async getCurrentUser() {
-    const response = await axiosInstance.get('/user');
+    const response = await axiosInstance.get('/auth/user');
+    // The API returns the user object nested under a 'user' key.
+    // We need to extract it before setting it in the store.
+    const user = response.data.user || response.data;
     const authStore = useAuthStore();
-    authStore.setUser(response.data);
+    authStore.setUser(user);
     return response.data;
   },
 
