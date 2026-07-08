@@ -24,7 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // The new, centralized logout function
-  async function logout(router: Router) {
+  async function logout(router: Router|null) {
     try {
       // It's good practice to try logging out from the server first
       await authApi.logout()
@@ -33,7 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       // Always clear local state and redirect
       clear()
-      router.replace({ name: 'Login' })
+      router?.replace({ name: 'Login' })
     }
   }
 

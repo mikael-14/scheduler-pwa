@@ -31,7 +31,7 @@ export const authApi = {
       await axiosInstance.post('/auth/logout');
     } finally {
       const authStore = useAuthStore();
-      authStore.logout();
+      authStore.logout(null);
     }
   },
 

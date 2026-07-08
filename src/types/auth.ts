@@ -4,6 +4,10 @@ export interface User {
   email: string;
   avatar_url?: string;
   language?: 'pt' | 'en';
+  approved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  roles: string[];
 }
 
 export interface LoginCredentials {
