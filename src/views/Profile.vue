@@ -97,10 +97,12 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useToastStore } from '../stores/toast'
 import { authApi } from '../api/auth'
 import { CameraIcon } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 const user = authStore.user
 
 const loading = ref(false)
@@ -125,9 +127,9 @@ const updateProfile = async () => {
       language: profile.language
     })
     authStore.setUser(updatedUser)
-    alert('Profile updated successfully!')
+    toastStore.addToast('Profile updated successfully!', 'success')
   } catch (error) {
-    alert('Failed to update profile.')
+    toastStore.addToast('Failed to update profile.', 'error')
   } finally {
     loading.value = false
   }
@@ -137,9 +139,9 @@ const updatePassword = async () => {
    loading.value = true
   try {
     // API Call would go here
-    alert('Password updated successfully!')
+    toastStore.addToast('Password updated successfully!', 'success')
   } catch (error) {
-    alert('Failed to update password.')
+    toastStore.addToast('Failed to update password.', 'error')
   } finally {
     loading.value = false
   }

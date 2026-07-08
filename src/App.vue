@@ -135,12 +135,14 @@
       </nav>
     </div>
   </div>
+  <ToastContainer />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import { useToastStore } from './stores/toast'
 import { authApi } from './api/auth'
 import { useDark } from '@vueuse/core'
 import {
@@ -156,9 +158,12 @@ import {
   MoonIcon,
   GlobeAltIcon
 } from '@heroicons/vue/24/outline'
-import { NavItem } from './components/common'
+import NavItem from './components/common/NavItem.vue'
+import ToastContainer from './components/common/ToastContainer.vue'
+
 
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 const user = computed(() => authStore.user)
 const router = useRouter()
 const isMobileMenuOpen = ref(false)
@@ -179,7 +184,7 @@ const setLanguage = async (language: 'pt' | 'en') => {
     await authApi.updateProfile({ language })
   } catch (error) {
     user.value.language = previousLanguage
-    alert('Unable to save language preference. Please try again.')
+    toastStore.addToast('Unable to save language preference. Please try again.', 'error')
   }
 }
 

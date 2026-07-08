@@ -82,6 +82,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { authApi } from '../api/auth'
+import { useToastStore } from '../stores/toast'
 import AuthLayout from '../components/AuthLayout.vue'
 import PasswordInput from '../components/PasswordInput.vue'
 
@@ -92,6 +93,7 @@ const loading = ref(false)
 const showPassword = ref(false)
 const router = useRouter()
 const route = useRoute()
+const toastStore = useToastStore()
 
 onMounted(() => {
   if (route.query.error === 'auth_failed') {
@@ -112,7 +114,7 @@ const handleLogin = async () => {
     // a protected route directly.
     router.push({ name: 'Home' })
   } catch (error) {
-    alert('Login failed. Please check your credentials.')
+    toastStore.addToast('Login failed. Please check your credentials.', 'error')
   } finally {
     loading.value = false
   }
@@ -123,7 +125,7 @@ const socialLogin = async (provider: 'google' | 'facebook') => {
     const { url } = await authApi.getSocialRedirect(provider)
     window.location.href = url
   } catch (error) {
-    alert(`Failed to redirect to ${provider}`)
+    toastStore.addToast(`Failed to redirect to ${provider}. Please try again.`, 'error')
   }
 }
 </script>
