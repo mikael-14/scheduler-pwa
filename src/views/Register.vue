@@ -86,9 +86,9 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { authApi } from '@/api/auth'
-import AuthLayout from '@/components/AuthLayout.vue'
-import PasswordInput from '@/components/PasswordInput.vue'
+import { authApi } from '../api/auth'
+import AuthLayout from '../components/AuthLayout.vue'
+import PasswordInput from '../components/PasswordInput.vue'
 
 const form = reactive({
   name: '',

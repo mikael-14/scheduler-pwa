@@ -84,7 +84,12 @@ const handleLogin = async () => {
   loading.value = true
   try {
     await authApi.login({ email: email.value, password: password.value })
-    router.push('/')
+    // Always redirect to home after login.
+    // The router guard will handle redirecting to the correct page
+    // based on authentication and approval status.
+    // This prevents a white screen for unapproved users trying to access
+    // a protected route directly.
+    router.push({ name: 'Home' })
   } catch (error) {
     alert('Login failed. Please check your credentials.')
   } finally {

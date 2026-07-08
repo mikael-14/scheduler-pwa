@@ -21,7 +21,10 @@ onMounted(async () => {
     try {
       // Request the current user's details using the token already in the store
       await authApi.getCurrentUser();
-      router.push({ name: 'My Agenda' });
+      // Redirect to home and let the router guard figure out the next step.
+      // This prevents unapproved users from hitting a protected route
+      // directly and seeing a blank page.
+      router.push({ name: 'Home' });
     } catch (error) {
       console.error('Failed to fetch user after social login:', error);
       router.push('/login?error=social_failed');

@@ -1,38 +1,47 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
-import { useSchedulesStore } from './schedules'
+import { ref, computed } from 'vue'
+import type { User } from '@/types'
+import { authApi } from '../api/auth'
+import type { Router } from 'vue-router'
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
-  const token = ref(localStorage.getItem('token'))
+  const user = ref<User | null>(null)
+  const token = ref<string | null>(localStorage.getItem('token'))
 
-  watch(user, (val) => {
-    if (val) localStorage.setItem('user', JSON.stringify(val))
-    else localStorage.removeItem('user')
-  }, { deep: true })
-
-  watch(token, (val) => {
-    if (val) localStorage.setItem('token', val)
-    else localStorage.removeItem('token')
-  })
-
-  function setUser(u: any) {
-    user.value = u
+  function setToken(newToken: string) {
+    token.value = newToken
+    localStorage.setItem('token', newToken)
   }
-  function setToken(t: string | null) {
-    token.value = t
-  }
-  function logout() {
-    // Clear other stores that hold user-specific data
-    const schedulesStore = useSchedulesStore()
-    schedulesStore.clearEvents()
 
-    // Clear auth state
+  function setUser(newUser: User) {
+    user.value = newUser
+  }
+
+  function clear() {
     user.value = null
     token.value = null
+    localStorage.removeItem('token')
+  }
+
+  // The new, centralized logout function
+  async function logout(router: Router) {
+    try {
+      // It's good practice to try logging out from the server first
+      await authApi.logout()
+    } catch (error) {
+      console.error('API logout failed, proceeding with client-side logout.', error)
+    } finally {
+      // Always clear local state and redirect
+      clear()
+      router.replace({ name: 'Login' })
+    }
   }
 
   const isAuthenticated = () => !!token.value
+  const isApproved = () => !!user.value?.approved_at
 
-  return { user, token, setUser, setToken, logout, isAuthenticated }
+  return {
+    user, token, setToken, setUser, clear, logout,
+    isAuthenticated, isApproved
+  }
 })

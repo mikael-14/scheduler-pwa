@@ -3,7 +3,7 @@
     <div
       class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-primary-500/30">
       <!-- Desktop Sidebar -->
-      <aside v-if="authStore.isAuthenticated()"
+      <aside v-if="authStore.isAuthenticated() && authStore.isApproved()"
         class="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col bg-white transition-transform dark:border-slate-800 dark:bg-slate-900 lg:flex">
         <div class="flex h-16 items-center border-b border-slate-200 px-6 dark:border-slate-800">
           <router-link to="/" class="flex items-center gap-2 font-bold text-primary-600 dark:text-primary-500">
@@ -29,7 +29,7 @@
       </aside>
 
       <!-- Top Bar -->
-      <header v-if="authStore.isAuthenticated()"
+      <header v-if="authStore.isAuthenticated() && authStore.isApproved()"
         class="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900 ">
         <button @click="isMobileMenuOpen = true" class="text-slate-500 dark:text-slate-400">
           <Bars3Icon class="h-6 w-6" />
@@ -68,7 +68,7 @@
       <!-- Mobile Menu Overlay -->
       <div v-if="isMobileMenuOpen" class="fixed inset-0 z-[60] lg:hidden">
         <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" @click="isMobileMenuOpen = false"></div>
-        <nav v-if="authStore.isAuthenticated()" class="fixed inset-y-0 left-0 w-64 bg-white p-4 dark:bg-slate-900">
+        <nav v-if="authStore.isAuthenticated() && authStore.isApproved()" class="fixed inset-y-0 left-0 w-64 bg-white p-4 dark:bg-slate-900">
           <div class="flex items-center justify-between mb-8">
             <router-link to="/" class="flex items-center gap-2 font-bold text-primary-600 dark:text-primary-500"
               @click="isMobileMenuOpen = false">
@@ -105,7 +105,7 @@
       </main>
 
       <!-- Mobile Bottom Navigation (Optional but often better for PWAs) -->
-      <nav v-if="authStore.isAuthenticated()"
+      <nav v-if="authStore.isAuthenticated() && authStore.isApproved()"
         class="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white px-2 dark:border-slate-800 dark:bg-slate-900 lg:hidden">
         <router-link to="/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
           active-class="text-primary-600 dark:text-primary-500">
@@ -207,17 +207,7 @@ watch(isDark, (val) => {
 })
 
 const logout = async () => {
-  try {
-    await authApi.logout()
-    // Using router.replace prevents the user from using the browser's back button
-    // to return to the authenticated state after logging out.
-    router.replace('/login')
-  } catch (error) {
-    console.error('Logout failed:', error)
-    // Even if API call fails, force a local logout and redirect
-    authStore.logout()
-    router.replace('/login')
-  }
+  await authStore.logout(router)
 }
 
 onMounted(() => {
