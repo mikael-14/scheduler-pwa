@@ -44,7 +44,28 @@
         </div>
       </div>
 
-      <!-- Notifications Section -->
+      <!-- Email Section -->
+      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="p-6">
+          <div class="flex items-center gap-3">
+             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
+              <EnvelopeIcon class="h-6 w-6" />
+            </div>
+            <div>
+              <h3 class="text-lg font-medium text-slate-900 dark:text-white">Email Notifications</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Get notified about your upcoming schedule and updates.</p>
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <button @click="requestNotifications" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100">
+              Enable Notifications
+            </button>
+          </div>
+        </div>
+      </div>
+
+         <!-- Notifications Section -->
       <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div class="p-6">
           <div class="flex items-center gap-3">
@@ -73,7 +94,8 @@ import { ref } from 'vue'
 import { 
   CloudArrowUpIcon, 
   ArrowPathIcon, 
-  BellIcon 
+  BellIcon,
+  EnvelopeIcon 
 } from '@heroicons/vue/24/outline'
 
 const syncing = ref(false)

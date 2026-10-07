@@ -7,10 +7,10 @@ export const useSchedulesStore = defineStore('schedules', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetchEvents(panel = 'user') {
+  async function fetchEvents(panel = 'admin', start?: string, end?: string) {
     loading.value = true
     try {
-      const data = await schedulesApi.fetchSchedules(panel)
+      const data = await schedulesApi.fetchSchedules(panel, start, end)
       events.value = data
     } catch (err) {
       console.error('Failed to fetch schedules', err)
@@ -20,7 +20,7 @@ export const useSchedulesStore = defineStore('schedules', () => {
     }
   }
 
-  async function addEvent(ev: any, panel = 'user') {
+  async function addEvent(ev: any, panel = 'admin') {
     try {
       const newEvent = await schedulesApi.createSchedule(ev, panel)
       events.value.push(newEvent)
@@ -31,7 +31,7 @@ export const useSchedulesStore = defineStore('schedules', () => {
     }
   }
 
-  async function updateEvent(id: number | string, ev: any, panel = 'user') {
+  async function updateEvent(id: number | string, ev: any, panel = 'admin') {
     try {
       const updatedEvent = await schedulesApi.updateSchedule(id, ev, panel)
       const index = events.value.findIndex(e => e.id === id)
@@ -45,7 +45,7 @@ export const useSchedulesStore = defineStore('schedules', () => {
     }
   }
 
-  async function deleteEvent(id: number | string, panel = 'user') {
+  async function deleteEvent(id: number | string, panel = 'admin') {
     try {
       await schedulesApi.deleteSchedule(id, panel)
       events.value = events.value.filter(e => e.id !== id)

@@ -66,7 +66,7 @@
       />
     </div>
 
-    <div v-if="store.loading" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-[2px]">
+    <div v-if="store.loading && store.events.length === 0" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-[2px]">
       <div class="rounded-xl bg-white p-4 shadow-xl dark:bg-slate-800">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
       </div>
@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid' // Added month layout support
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -95,19 +95,48 @@ const calendarRef = ref<any>(null)
 const currentDate = ref(new Date())
 const currentView = ref('timeGridWeek')
 
+// Fetches only the events inside the visible date range.
+// FullCalendar calls this automatically on mount, view change, and prev/next navigation.
+const fetchEventsForRange = async (fetchInfo: any, successCallback: any, failureCallback: any) => {
+  await store.fetchEvents('admin', fetchInfo.startStr, fetchInfo.endStr)
+  if (store.error) {
+    failureCallback(new Error(store.error))
+  } else {
+    successCallback(store.events)
+  }
+}
+
+// Keeps the header date/view label in sync whenever the visible range changes
+const handleDatesSet = (info: any) => {
+  currentDate.value = info.view.currentStart
+  currentView.value = info.view.type
+}
+
 // All configurations must live here for FullCalendar Vue 3
 const calendarOptions = computed(() => ({
   plugins: [listPlugin, dayGridPlugin, timeGridPlugin, interactionPlugin],
   initialView: 'listWeek',
-  events: store.events,
+  events: fetchEventsForRange,
   headerToolbar: false, // Disables original buttons since you built beautiful custom ones
-  allDaySlot: false,
-  slotMinTime: '07:00:00',
-  slotMaxTime: '21:00:00',
+  allDaySlot: true,
   slotDuration: '00:30:00',
   expandRows: true,
   height: 'auto',
   nowIndicator: true,
+  datesSet: handleDatesSet,
+  // Format side axis time labels (e.g., 00:00, 01:00 ... 23:00)
+  slotLabelFormat: {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  },
+  
+  // Format event card time labels
+  eventTimeFormat: {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  },
   eventClick: handleEventClick
 }))
 
@@ -148,36 +177,22 @@ const dateHeading = computed(() => {
   }).format(end)
 })
 
-const updateDateAndView = () => {
-  const api = calendarRef.value?.getApi()
-  if (api) {
-    currentDate.value = api.getDate()
-    currentView.value = api.view.type
-  }
-}
-
-// Controls shifting views via the custom tab buttons
+// Controls shifting views via the custom tab buttons.
+// handleDatesSet updates the header automatically after each change.
 const changeView = (viewName: string) => {
-  const api = calendarRef.value?.getApi()
-  if (api) {
-    api.changeView(viewName)
-    updateDateAndView()
-  }
+  calendarRef.value?.getApi().changeView(viewName)
 }
 
 const goPrev = () => {
   calendarRef.value?.getApi().prev()
-  updateDateAndView()
 }
 
 const goNext = () => {
   calendarRef.value?.getApi().next()
-  updateDateAndView()
 }
 
 const goToday = () => {
   calendarRef.value?.getApi().today()
-  updateDateAndView()
 }
 
 const openCreateModal = () => {
@@ -187,14 +202,6 @@ const openCreateModal = () => {
 const handleEventClick = (info: any) => {
   alert(`Event: ${info.event.title}`)
 }
-
-onMounted(() => {
-  store.fetchEvents()
-  // Wait a split second for FullCalendar to paint before parsing current views
-  setTimeout(() => {
-    updateDateAndView()
-  }, 100)
-})
 </script>
 
 <style>
