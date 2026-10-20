@@ -1,51 +1,192 @@
 import axiosInstance from '../config/axios';
-import { scheduleDB } from '../utils/db';
+import { isNetworkError } from '../utils/apiError';
+import { readOfflineSchedule, readOfflineSchedules, syncOfflineData } from '../utils/offlineSync';
+
+export type ScheduleStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'completed' | 'not_shown';
+
+export interface ScheduleParticipant {
+  id?: number;
+  user_id: number;
+  name?: string | null;
+  status?: ScheduleStatus;
+  description?: string | null;
+}
+
+/** A schedule as the API returns it (see ScheduleTransformer). */
+export interface Schedule {
+  id: number;
+  start: string;
+  end: string | null;
+  all_day: boolean;
+  description: string | null;
+  /** staff only */
+  internal_note?: string | null;
+  status: ScheduleStatus;
+  user_id: number;
+  schedule_type_id: number;
+  schedule_type: { id: number; name: string; color: string | null; all_day: boolean; range: boolean } | null;
+  user: { id: number; name: string } | null;
+  schedule_users: ScheduleParticipant[];
+  /** what the signed-in user may do with it */
+  can: { update: boolean; cancel: boolean; delete: boolean; approve: boolean };
+  /** set when it comes from the copy saved on the device (no connection) */
+  offline?: boolean;
+}
+
+/** A calendar range of schedules; `offline` when read from the device, `complete` when it covers the whole range. */
+export interface ScheduleList {
+  data: Schedule[];
+  offline: boolean;
+  complete: boolean;
+}
+
+/** What is sent to create or change a schedule. Times are "YYYY-MM-DD HH:mm" in server time. */
+export interface ScheduleInput {
+  schedule_type_id: number;
+  start: string;
+  end?: string | null;
+  all_day?: boolean;
+  description?: string | null;
+  internal_note?: string | null;
+  status?: ScheduleStatus;
+  user_id?: number | null;
+  schedule_users?: { user_id: number }[];
+}
+
+export interface ScheduleTypeOption {
+  id: number;
+  name: string;
+  color: string | null;
+  description: string | null;
+  /** needs an end time */
+  range: boolean;
+  /** may be all day */
+  all_day: boolean;
+  /** date window of the type */
+  start: string | null;
+  end: string | null;
+  /** daily hours, "HH:mm" */
+  min_time: string | null;
+  max_time: string | null;
+}
+
+/** The choices of the schedule form (GET /schedules/form-options). */
+export interface ScheduleFormOptions {
+  types: ScheduleTypeOption[];
+  people: { id: number; name: string }[];
+  statuses: { value: ScheduleStatus; label: string }[];
+  can: { book_for_others: boolean; past_dates: boolean; internal_note: boolean };
+  timezone: string;
+}
+
+export interface PendingSchedule {
+  id: number;
+  start: string;
+  end: string | null;
+  all_day: boolean;
+  description: string | null;
+  status: string;
+  user: { id: number; name: string } | null;
+  schedule_type: { id: number; name: string; color: string | null } | null;
+  participants: string[];
+}
+
+export interface ScheduleFilters {
+  start?: string;
+  end?: string;
+  /** only schedules I own or take part in */
+  mine?: boolean;
+}
+
+/** A calendar range (FullCalendar's exclusive end) as inclusive "YYYY-MM-DD" days. */
+function rangeDays(filters: ScheduleFilters): { from: string; to: string } {
+  const from = (filters.start ?? '0000-01-01').slice(0, 10);
+  if (!filters.end) return { from, to: '9999-12-31' };
+  const end = new Date(`${filters.end.slice(0, 10)}T00:00:00Z`);
+  end.setUTCDate(end.getUTCDate() - 1);
+  return { from, to: end.toISOString().slice(0, 10) };
+}
 
 export const schedulesApi = {
-  async fetchSchedules(panel = 'admin', start?: string, end?: string) {
+  /**
+   * Schedules of a calendar range. Without a connection, the copy saved on the device (this
+   * week and next, see utils/offlineSync) is used, and `complete` says whether it covers the
+   * whole range.
+   */
+  async fetchSchedules(panel = 'admin', filters: ScheduleFilters = {}): Promise<ScheduleList> {
+    const params: Record<string, string> = { per_page: '500' };
+
+    // Spatie QueryBuilder expects `filter[key_name]` format
+    if (filters.start) params['filter[start_from]'] = filters.start;
+    if (filters.end) params['filter[start_to]'] = filters.end;
+    if (filters.mine) params['filter[mine]'] = '1';
+
     try {
-      const params: Record<string, string> = { per_page: '10000' };
-
-      // Spatie QueryBuilder expects `filter[key_name]` format
-      if (start) params['filter[start_from]'] = start;
-      if (end) params['filter[start_to]'] = end;
-
       const response = await axiosInstance.get(`/${panel}/schedules`, { params });
-      const data = response.data.data || response.data;
-      console.log('Fetched schedules from API:', data);
-
-      // Update local DB
-      await scheduleDB.clear();
-      await scheduleDB.putAll(data);
-
-      return data;
+      return { data: response.data.data || response.data, offline: false, complete: true };
     } catch (err) {
-      console.error('Failed to fetch schedules from API, falling back to local DB', err);
-      // Fallback to local DB
-      const localEvents = await scheduleDB.getAll();
-      if (localEvents.length > 0) {
-        return localEvents;
-      }
-      throw err;
+      if (!isNetworkError(err)) throw err;
+
+      const { from, to } = rangeDays(filters);
+      const saved = await readOfflineSchedules(from, to, !!filters.mine);
+      if (!saved.window) throw err; // nothing was ever saved on this device
+      return { data: saved.schedules, offline: true, complete: saved.complete };
     }
   },
 
-  async createSchedule(event: any, panel = 'admin') {
-    const response = await axiosInstance.post(`/${panel}/schedules`, event);
-    const newEvent = response.data.data || response.data;
-    await scheduleDB.put(newEvent);
-    return newEvent;
+  /** One schedule; without a connection, the saved copy if it is in the offline window. */
+  async fetchSchedule(id: number | string, panel = 'admin'): Promise<Schedule> {
+    try {
+      const response = await axiosInstance.get(`/${panel}/schedules/${id}`);
+      return response.data.data;
+    } catch (err) {
+      const saved = isNetworkError(err) ? await readOfflineSchedule(id) : undefined;
+      if (!saved) throw err;
+      return { ...saved, offline: true };
+    }
   },
 
-  async updateSchedule(id: number | string, event: any, panel = 'admin') {
-    const response = await axiosInstance.patch(`/${panel}/schedules/${id}`, event);
-    const updatedEvent = response.data.data || response.data;
-    await scheduleDB.put(updatedEvent);
-    return updatedEvent;
+  async formOptions(panel = 'admin'): Promise<ScheduleFormOptions> {
+    const response = await axiosInstance.get(`/${panel}/schedules/form-options`);
+    return response.data.data;
+  },
+
+  async createSchedule(input: ScheduleInput, panel = 'admin'): Promise<Schedule> {
+    const response = await axiosInstance.post(`/${panel}/schedules`, input);
+    syncOfflineData(); // the saved weeks follow every change
+    return response.data.data || response.data;
+  },
+
+  async updateSchedule(id: number | string, input: Partial<ScheduleInput>, panel = 'admin'): Promise<Schedule> {
+    const response = await axiosInstance.patch(`/${panel}/schedules/${id}`, input);
+    syncOfflineData();
+    return response.data.data || response.data;
+  },
+
+  /** Owners cancel instead of deleting once a schedule is approved. */
+  async cancelSchedule(id: number | string, panel = 'admin'): Promise<Schedule> {
+    return this.updateSchedule(id, { status: 'cancelled' }, panel);
+  },
+
+  /** The approver's work list: schedules waiting for a decision, soonest first. */
+  async fetchPending(panel = 'admin'): Promise<PendingSchedule[]> {
+    const response = await axiosInstance.get(`/${panel}/schedules/pending`);
+    return response.data.data;
+  },
+
+  /** The optional message is appended to the schedule's internal note (visible to staff only). */
+  async approve(id: number | string, message?: string, panel = 'admin') {
+    await axiosInstance.post(`/${panel}/schedules/${id}/approve`, message ? { message } : {});
+    syncOfflineData();
+  },
+
+  async reject(id: number | string, message?: string, panel = 'admin') {
+    await axiosInstance.post(`/${panel}/schedules/${id}/reject`, message ? { message } : {});
+    syncOfflineData();
   },
 
   async deleteSchedule(id: number | string, panel = 'admin') {
     await axiosInstance.delete(`/${panel}/schedules/${id}`);
-    await scheduleDB.delete(id);
+    syncOfflineData();
   }
 };

@@ -1,20 +1,28 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { schedulesApi } from '../api/schedules'
+import { schedulesApi, type Schedule, type ScheduleFilters } from '../api/schedules'
+import { t } from '../i18n'
+import { apiErrorMessage } from '../utils/apiError'
 
 export const useSchedulesStore = defineStore('schedules', () => {
-  const events = ref<any[]>([])
+  const events = ref<Schedule[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  // read from the copy saved on the device, and whether it covers the range on screen
+  const offline = ref(false)
+  const offlineComplete = ref(true)
 
-  async function fetchEvents(panel = 'admin', start?: string, end?: string) {
+  async function fetchEvents(panel = 'admin', filters: ScheduleFilters = {}) {
     loading.value = true
+    error.value = null
     try {
-      const data = await schedulesApi.fetchSchedules(panel, start, end)
-      events.value = data
+      const result = await schedulesApi.fetchSchedules(panel, filters)
+      events.value = result.data
+      offline.value = result.offline
+      offlineComplete.value = result.complete
     } catch (err) {
       console.error('Failed to fetch schedules', err)
-      error.value = 'Failed to load schedules'
+      error.value = apiErrorMessage(err, t('calendar.loadFailed'))
     } finally {
       loading.value = false
     }
@@ -61,5 +69,5 @@ export const useSchedulesStore = defineStore('schedules', () => {
     loading.value = false
   }
 
-  return { events, loading, error, fetchEvents, addEvent, updateEvent, deleteEvent, clearEvents }
+  return { events, loading, error, offline, offlineComplete, fetchEvents, addEvent, updateEvent, deleteEvent, clearEvents }
 })

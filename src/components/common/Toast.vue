@@ -1,28 +1,21 @@
 <template>
-  <div
-    :class="[
-      'pointer-events-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-slate-800 dark:ring-white/10',
-      'transform transition-all duration-300 ease-in-out',
-      visible
-        ? 'translate-x-0 opacity-100 sm:translate-y-0'
-        : 'translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-full'
-    ]"
-  >
+  <div :role="toast.type === 'error' ? 'alert' : 'status'"
+    :class="['pointer-events-auto w-full max-w-sm overflow-hidden rounded-2xl border-l-4 bg-white shadow-lg ring-1 ring-black/5 dark:bg-slate-800 dark:ring-white/10', accents[toast.type]]">
     <div class="p-4">
       <div class="flex items-start">
         <div class="flex-shrink-0">
           <component :is="icons[toast.type]" :class="['h-6 w-6', iconColors[toast.type]]" aria-hidden="true" />
         </div>
         <div class="ml-3 w-0 flex-1 pt-0.5">
-          <p class="text-sm font-medium text-slate-900 dark:text-white">{{ toast.message }}</p>
+          <p v-if="toast.title" class="text-sm font-semibold text-slate-900 dark:text-white">{{ toast.title }}</p>
+          <p :class="['text-sm', toast.title ? 'mt-1 text-slate-600 dark:text-slate-300' : 'font-medium text-slate-900 dark:text-white']">
+            {{ toast.message }}
+          </p>
         </div>
         <div class="ml-4 flex flex-shrink-0">
-          <button
-            type="button"
-            @click="close"
-            class="inline-flex rounded-md bg-white text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:bg-slate-800 dark:text-slate-500 dark:hover:text-slate-400"
-          >
-            <span class="sr-only">Close</span>
+          <button type="button" @click="emit('close')"
+            class="inline-flex rounded-md text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:text-slate-500 dark:hover:text-slate-400 dark:focus:ring-offset-slate-800">
+            <span class="sr-only">{{ t('common.close') }}</span>
             <XMarkIcon class="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
@@ -32,18 +25,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import { CheckCircleIcon, XCircleIcon, InformationCircleIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 import { XMarkIcon } from '@heroicons/vue/20/solid'
 import type { Toast, ToastType } from '@/stores/toast'
+import { t } from '../../i18n'
 
-const props = defineProps<{
+defineProps<{
   toast: Toast
 }>()
 
 const emit = defineEmits(['close'])
-
-const visible = ref(false)
 
 const icons = {
   success: CheckCircleIcon,
@@ -59,12 +50,10 @@ const iconColors: Record<ToastType, string> = {
   info: 'text-blue-500'
 }
 
-onMounted(() => {
-  setTimeout(() => (visible.value = true), 10)
-})
-
-function close() {
-  visible.value = false
-  setTimeout(() => emit('close'), 300) // Allow transition to complete
+const accents: Record<ToastType, string> = {
+  success: 'border-green-500',
+  error: 'border-red-500',
+  warning: 'border-amber-500',
+  info: 'border-blue-500'
 }
 </script>

@@ -1,17 +1,15 @@
 <template>
   <AuthLayout>
-    <template #heading>Create your account</template>
+    <template #heading>{{ t('register.title') }}</template>
     <template #subheading>
-      Already have an account?
-      <router-link to="/login" class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">Sign in
-        instead</router-link>
+      {{ t('register.haveAccount') }}
+      <router-link to="/login" class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ t('register.signInInstead') }}</router-link>
     </template>
 
     <div class="mt-8 rounded-2xl bg-white p-8 shadow-sm dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
         <form class="space-y-6" @submit.prevent="handleRegister">
           <div>
-            <label for="full-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Full
-              Name</label>
+            <label for="full-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('register.fullName') }}</label>
             <div class="mt-1">
               <input v-model="form.name" id="full-name" name="name" type="text" autocomplete="name" required
                 class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:text-sm"
@@ -20,8 +18,7 @@
           </div>
 
           <div>
-            <label for="email-address" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Email
-              address</label>
+            <label for="email-address" class="block text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('auth.emailAddress') }}</label>
             <div class="mt-1">
               <input v-model="form.email" id="email-address" name="email" type="email" autocomplete="email" required
                 class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:text-sm"
@@ -32,7 +29,7 @@
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label for="password"
-                class="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+                class="block text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('auth.password') }}</label>
               <div class="mt-1">
                 <PasswordInput v-model="form.password" v-model:show="showPassword" id="password" name="password" autocomplete="new-password" />
               </div>
@@ -40,7 +37,7 @@
 
             <div>
               <label for="password-confirm"
-                class="block text-sm font-medium text-slate-700 dark:text-slate-300">Confirm</label>
+                class="block text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('register.confirm') }}</label>
               <div class="mt-1">
                 <PasswordInput v-model="form.password_confirmation" v-model:show="showPassword" id="password-confirm" name="password_confirmation" autocomplete="new-password" />
               </div>
@@ -51,7 +48,7 @@
             <button type="submit" :disabled="loading"
               class="flex w-full justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50 transition-all">
               <span v-if="loading" class="mr-2 animate-spin">⌛</span>
-              Create Account
+              {{ t('register.create') }}
             </button>
           </div>
         </form>
@@ -62,7 +59,7 @@
               <div class="w-full border-t border-slate-300 dark:border-slate-700"></div>
             </div>
             <div class="relative flex justify-center text-sm">
-              <span class="bg-white px-2 text-slate-500 dark:bg-slate-900">Or join with</span>
+              <span class="bg-white px-2 text-slate-500 dark:bg-slate-900">{{ t('register.orJoinWith') }}</span>
             </div>
           </div>
 
@@ -84,6 +81,9 @@
 </template>
 
 <script setup lang="ts">
+import { t, locale } from '../i18n'
+import { apiErrorMessage } from '../utils/apiError'
+import { useToastStore } from '../stores/toast'
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { authApi } from '../api/auth'
@@ -100,19 +100,20 @@ const form = reactive({
 const loading = ref(false)
 const showPassword = ref(false)
 const router = useRouter()
+const toastStore = useToastStore()
 
 const handleRegister = async () => {
   if (form.password !== form.password_confirmation) {
-    alert('Passwords do not match')
+    toastStore.addToast(t('register.passwordMismatch'), 'error')
     return
   }
 
   loading.value = true
   try {
-    await authApi.register(form)
+    await authApi.register({ ...form, locale: locale.value })
     router.push('/')
   } catch (error) {
-    alert('Registration failed. Please check your details.')
+    toastStore.addToast(apiErrorMessage(error, t('register.failed')), 'error')
   } finally {
     loading.value = false
   }

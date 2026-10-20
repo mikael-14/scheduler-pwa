@@ -7,41 +7,52 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
+      // icons live in public/img/icons (drawn by a script; replace the PNGs to change the logo,
+      // keeping the sizes; the maskable one needs the logo inside the middle 80%)
       includeAssets: [
-        'favicon.ico',
-        'apple-touch-icon.png',
-        'masked-icon.svg',
+        'img/icons/favicon-32x32.png',
+        'img/icons/apple-touch-icon.png',
         'img/icons/icon-192x192.png',
-        'img/icons/icon-512x512.png'
+        'img/icons/icon-512x512.png',
+        'img/icons/icon-maskable-512x512.png'
       ],
+      // what the phone needs to install the app (home screen icon, name, splash screen)
       manifest: {
-        name: 'Scheduler PWA',
+        id: '/',
+        name: 'Scheduler',
         short_name: 'Scheduler',
-        description: 'Mobile-friendly schedule coordinator',
-        theme_color: '#f59e0b',
-        background_color: '#0f172a',
+        description: 'Coordenador de agendamentos para telemóvel',
+        lang: 'pt',
+        start_url: '/',
+        scope: '/',
+        theme_color: '#059669',
+        background_color: '#f8fafc',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
           {
             src: '/img/icons/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: '/img/icons/icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: '/img/icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/img/icons/icon-maskable-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },
       workbox: {
+        // Web push: `push` and `notificationclick` handlers live in public/push-sw.js
+        importScripts: ['push-sw.js'],
         // This is the key addition. It tells the service worker that
         // any navigation to a URL starting with /auth/ is a valid app route
         // and should be handled by serving the index.html (app shell).
@@ -60,18 +71,8 @@ export default defineConfig({
               }
             }
           },
-          {
-            urlPattern: /^\/api\/.*$/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 10,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24
-              }
-            }
-          },
+          // API data is not cached here: the app keeps its own offline copy (src/utils/offlineSync),
+          // which is limited to this week and next and wiped on sign-out
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
             handler: 'CacheFirst',

@@ -4,12 +4,13 @@
       <div class="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-600 text-3xl text-white shadow-lg shadow-primary-500/20">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
       </div>
-      <p class="mt-4 font-semibold text-slate-700 dark:text-slate-300">Finalizing login, please wait...</p>
+      <p class="mt-4 font-semibold text-slate-700 dark:text-slate-300">{{ t('auth.finalizing') }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { t } from '../i18n'
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 

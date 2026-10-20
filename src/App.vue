@@ -7,23 +7,25 @@
         class="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col bg-white transition-transform dark:border-slate-800 dark:bg-slate-900 lg:flex">
         <div class="flex h-16 items-center border-b border-slate-200 px-6 dark:border-slate-800">
           <router-link to="/" class="flex items-center gap-2 font-bold text-primary-600 dark:text-primary-500">
-            <span class="text-2xl">📅</span>
+            <img src="/img/icons/icon-192x192.png" alt="" class="h-8 w-8 rounded-lg" />
             <span>Scheduler</span>
           </router-link>
         </div>
         <nav class="flex-1 overflow-y-auto p-4 space-y-1">
-          <NavItem to="/" icon="HomeIcon">Home</NavItem>
-          <NavItem to="/my-agenda/" icon="CalendarIcon">My Agenda</NavItem>
-          <NavItem to="/agenda/" icon="CalendarDaysIcon">Agenda</NavItem>
-          <NavItem to="/notifications" icon="BellIcon">Notifications</NavItem>
-          <NavItem to="/profile" icon="UserIcon">Profile</NavItem>
-          <NavItem to="/settings" icon="Cog6ToothIcon">Settings</NavItem>
+          <NavItem to="/" icon="HomeIcon">{{ t('nav.home') }}</NavItem>
+          <NavItem to="/my-agenda/" icon="CalendarIcon">{{ t('nav.myAgenda') }}</NavItem>
+          <NavItem to="/agenda/" icon="CalendarDaysIcon">{{ t('nav.agenda') }}</NavItem>
+          <NavItem v-if="authStore.canApprove()" to="/approvals" icon="CheckBadgeIcon" :badge="badges.pendingApprovals">{{ t('nav.approvals') }}</NavItem>
+          <NavItem to="/notifications" icon="BellIcon" :badge="badges.unreadNotifications">{{ t('nav.notifications') }}</NavItem>
+          <NavItem to="/profile" icon="UserIcon">{{ t('nav.profile') }}</NavItem>
+          <NavItem to="/settings" icon="Cog6ToothIcon">{{ t('nav.settings') }}</NavItem>
         </nav>
-        <div class="border-t border-slate-200 p-4 dark:border-slate-800">
+        <div class="space-y-1 border-t border-slate-200 p-4 dark:border-slate-800">
+          <InstallButton variant="nav" />
           <button @click="logout"
             class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100">
             <ArrowRightOnRectangleIcon class="h-5 w-5" />
-            Logout
+            {{ t('nav.logout') }}
           </button>
         </div>
       </aside>
@@ -37,11 +39,12 @@
         <router-link to="/"
           class="text-lg font-bold text-primary-600 dark:text-primary-500 lg:hidden">Scheduler</router-link>
         <div class="flex items-center gap-2">
+          <ConnectionStatus />
           <div
             class="relative flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 text-sm text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
             <button type="button" @click="languageMenuOpen = !languageMenuOpen"
               class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-              aria-label="Change language">
+              :aria-label="t('nav.changeLanguage')">
               <GlobeAltIcon class="h-5 w-5" />
             </button>
             <div v-if="languageMenuOpen"
@@ -60,7 +63,7 @@
           </button>
           <router-link to="/profile"
             class="h-8 w-8 overflow-hidden rounded-full border border-slate-200 dark:border-slate-700">
-            <img :src="user?.avatar_url || 'https://ui-avatars.com/api/?name=' + (user?.name || 'User')" alt="Avatar" />
+            <img :src="user?.avatar_url || 'https://ui-avatars.com/api/?name=' + (user?.name || t('nav.defaultAvatarName'))" alt="Avatar" />
           </router-link>
         </div>
       </header>
@@ -72,7 +75,7 @@
           <div class="flex items-center justify-between mb-8">
             <router-link to="/" class="flex items-center gap-2 font-bold text-primary-600 dark:text-primary-500"
               @click="isMobileMenuOpen = false">
-              <span class="text-xl">📅</span>
+              <img src="/img/icons/icon-192x192.png" alt="" class="h-7 w-7 rounded-lg" />
               <span>Scheduler</span>
             </router-link>
             <button @click="isMobileMenuOpen = false" class="text-slate-500">
@@ -80,18 +83,20 @@
             </button>
           </div>
           <div class="space-y-1">
-            <NavItem to="/" icon="HomeIcon" @click="isMobileMenuOpen = false">Home</NavItem>
-            <NavItem to="/my-agenda/" icon="CalendarIcon" @click="isMobileMenuOpen = false">My Agenda</NavItem>
-            <NavItem to="/agenda/" icon="CalendarDaysIcon" @click="isMobileMenuOpen = false">Agenda</NavItem>
-            <NavItem to="/notifications" icon="BellIcon" @click="isMobileMenuOpen = false">Notifications</NavItem>
-            <NavItem to="/profile" icon="UserIcon" @click="isMobileMenuOpen = false">Profile</NavItem>
-            <NavItem to="/settings" icon="Cog6ToothIcon" @click="isMobileMenuOpen = false">Settings</NavItem>
+            <NavItem to="/" icon="HomeIcon" @click="isMobileMenuOpen = false">{{ t('nav.home') }}</NavItem>
+            <NavItem to="/my-agenda/" icon="CalendarIcon" @click="isMobileMenuOpen = false">{{ t('nav.myAgenda') }}</NavItem>
+            <NavItem to="/agenda/" icon="CalendarDaysIcon" @click="isMobileMenuOpen = false">{{ t('nav.agenda') }}</NavItem>
+            <NavItem v-if="authStore.canApprove()" to="/approvals" icon="CheckBadgeIcon" :badge="badges.pendingApprovals" @click="isMobileMenuOpen = false">{{ t('nav.approvals') }}</NavItem>
+            <NavItem to="/notifications" icon="BellIcon" :badge="badges.unreadNotifications" @click="isMobileMenuOpen = false">{{ t('nav.notifications') }}</NavItem>
+            <NavItem to="/profile" icon="UserIcon" @click="isMobileMenuOpen = false">{{ t('nav.profile') }}</NavItem>
+            <NavItem to="/settings" icon="Cog6ToothIcon" @click="isMobileMenuOpen = false">{{ t('nav.settings') }}</NavItem>
           </div>
-          <div class="absolute bottom-4 left-4 right-4 border-t border-slate-200 pt-4 dark:border-slate-800">
+          <div class="absolute bottom-4 left-4 right-4 space-y-1 border-t border-slate-200 pt-4 dark:border-slate-800">
+            <InstallButton variant="nav" @done="isMobileMenuOpen = false" />
             <button @click="logout"
               class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
               <ArrowRightOnRectangleIcon class="h-5 w-5" />
-              Logout
+              {{ t('nav.logout') }}
             </button>
           </div>
         </nav>
@@ -99,7 +104,9 @@
 
       <!-- Main Content Area -->
       <main :class="authStore.isAuthenticated() ? 'lg:pl-64' : ''">
-        <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl px-4 pt-8 pb-24 sm:px-6 lg:px-8 lg:pb-8">
+          <!-- push wanted but not working on this device: offer to fix it -->
+          <PushPrompt v-if="authStore.isAuthenticated() && authStore.isApproved()" />
           <router-view />
         </div>
       </main>
@@ -110,32 +117,33 @@
         <router-link to="/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
           active-class="text-primary-600 dark:text-primary-500">
           <HomeIcon class="h-6 w-6" />
-          <span class="text-[10px] font-medium">Home</span>
+          <span class="text-[10px] font-medium">{{ t('nav.home') }}</span>
         </router-link>
         <router-link to="/my-agenda/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
           active-class="text-primary-600 dark:text-primary-500">
           <CalendarIcon class="h-6 w-6" />
-          <span class="text-[10px] font-medium">My Agenda</span>
+          <span class="text-[10px] font-medium">{{ t('nav.myAgenda') }}</span>
         </router-link>
         <router-link to="/agenda/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
           active-class="text-primary-600 dark:text-primary-500">
           <CalendarDaysIcon class="h-6 w-6" />
-          <span class="text-[10px] font-medium">Agenda</span>
+          <span class="text-[10px] font-medium">{{ t('nav.agenda') }}</span>
         </router-link>
         <router-link to="/notifications" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
           active-class="text-primary-600 dark:text-primary-500">
-          <BellIcon class="h-6 w-6" />
-          <span class="text-[10px] font-medium">Notifications</span>
+          <span class="relative"><BellIcon class="h-6 w-6" /><span v-if="badges.unreadNotifications" class="absolute -right-1.5 -top-1 min-w-[1rem] rounded-full bg-red-500 px-1 text-center text-[10px] font-semibold leading-4 text-white">{{ badges.unreadNotifications > 9 ? '9+' : badges.unreadNotifications }}</span></span>
+          <span class="text-[10px] font-medium">{{ t('nav.notifications') }}</span>
         </router-link>
         <router-link to="/settings" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
           active-class="text-primary-600 dark:text-primary-500">
           <Cog6ToothIcon class="h-6 w-6" />
-          <span class="text-[10px] font-medium">Settings</span>
+          <span class="text-[10px] font-medium">{{ t('nav.settings') }}</span>
         </router-link>
       </nav>
     </div>
   </div>
   <ToastContainer />
+  <AppDialog />
 </template>
 
 <script setup lang="ts">
@@ -144,7 +152,8 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useToastStore } from './stores/toast'
 import { authApi } from './api/auth'
-import { useDark } from '@vueuse/core'
+import { useDark, useIntervalFn } from '@vueuse/core'
+import { useBadgesStore } from './stores/badges'
 import {
   HomeIcon,
   CalendarIcon,
@@ -160,15 +169,33 @@ import {
 } from '@heroicons/vue/24/outline'
 import NavItem from './components/common/NavItem.vue'
 import ToastContainer from './components/common/ToastContainer.vue'
+import AppDialog from './components/common/AppDialog.vue'
+import InstallButton from './components/common/InstallButton.vue'
+import PushPrompt from './components/common/PushPrompt.vue'
+import ConnectionStatus from './components/common/ConnectionStatus.vue'
+import { t, locale, setLocale } from './i18n'
 
 
 const authStore = useAuthStore()
+const badges = useBadgesStore()
+
+// Menu counters: after every page change (reading or deciding updates them), and every minute
+// while the app is on screen
+const BADGES_EVERY_MS = 60_000
+useRouter().afterEach(() => badges.refresh())
+useIntervalFn(() => {
+  if (document.visibilityState === 'visible') badges.refresh()
+}, BADGES_EVERY_MS)
+// a push arrived (see public/push-sw.js): a new notification or decision to count
+navigator.serviceWorker?.addEventListener('message', (event) => {
+  if (event.data?.type === 'push') badges.refresh()
+})
 const toastStore = useToastStore()
 const user = computed(() => authStore.user)
 const router = useRouter()
 const isMobileMenuOpen = ref(false)
 const languageMenuOpen = ref(false)
-const selectedLanguage = computed(() => user?.value?.language || 'pt')
+const selectedLanguage = computed(() => locale.value)
 const languageOptions: Array<{ value: 'pt' | 'en'; label: string }> = [
   { value: 'pt', label: 'Português' },
   { value: 'en', label: 'English' }
@@ -177,14 +204,15 @@ const languageOptions: Array<{ value: 'pt' | 'en'; label: string }> = [
 const setLanguage = async (language: 'pt' | 'en') => {
   if (!user.value) return
 
-  const previousLanguage = user.value.language
-  user.value.language = language
+  // Switch immediately, roll back if the profile could not be saved
+  const previousLanguage = locale.value
+  setLocale(language)
 
   try {
     await authApi.updateProfile({ language })
   } catch (error) {
-    user.value.language = previousLanguage
-    toastStore.addToast('Unable to save language preference. Please try again.', 'error')
+    setLocale(previousLanguage)
+    toastStore.addToast(t('language.saveFailed'), 'error')
   }
 }
 
@@ -216,6 +244,8 @@ const logout = async () => {
 }
 
 onMounted(() => {
+  badges.refresh()
+
   // Initialize theme: prefer saved value, else use system preference
   try {
     const stored = localStorage.getItem(THEME_KEY)
@@ -232,7 +262,9 @@ onMounted(() => {
 
   document.documentElement.classList.toggle('dark', isDark.value)
 
-  if (!authStore.isAuthenticated() && router.currentRoute.value.path !== '/login' && router.currentRoute.value.path !== '/register') {
+  // signed-out visitors go to the login page, except on the pages meant for them (register, password reset)
+  const current = router.currentRoute.value
+  if (!authStore.isAuthenticated() && current.path !== '/login' && current.path !== '/register' && !current.meta.public) {
     router.push('/login')
   }
 })

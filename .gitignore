@@ -5,3 +5,7 @@ dist/
 dist/*
 dev-dist/*
 dev-dist/
+# vue-tsc output must never sit next to the sources (Vite would load it instead of the .ts)
+src/**/*.js
+src/**/*.js.map
+*.bak

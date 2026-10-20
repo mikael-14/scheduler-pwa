@@ -10,6 +10,9 @@
   >
     <component :is="resolvedIcon" class="h-5 w-5" :class="isActive ? 'text-primary-600 dark:text-primary-400' : ''" />
     <slot />
+    <span v-if="badge" class="ml-auto min-w-[1.25rem] rounded-full bg-red-500 px-1.5 text-center text-xs font-semibold leading-5 text-white">
+      {{ badge > 99 ? '99+' : badge }}
+    </span>
   </router-link>
 </template>
 
@@ -21,6 +24,8 @@ import * as Icons from '@heroicons/vue/24/outline'
 const props = defineProps<{
   to: string
   icon: string
+  /** a counter on the right (e.g. unread notifications); hidden at 0 */
+  badge?: number
 }>()
 
 const route = useRoute()

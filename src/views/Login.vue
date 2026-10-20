@@ -1,9 +1,9 @@
 <template>
   <AuthLayout>
-    <template #heading>Sign in to your account</template> 
+    <template #heading>{{ t('auth.signInTitle') }}</template>
     <template #subheading>
-      Or
-      <router-link to="/register" class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">create a new account</router-link>
+      {{ t('auth.or') }}
+      <router-link to="/register" class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ t('auth.createAccountLink') }}</router-link>
     </template>
 
     <div class="mt-8 rounded-2xl bg-white p-8 shadow-sm dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
@@ -20,7 +20,7 @@
           </div>
         </div>
         <div>
-          <label for="email-address" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Email address</label>
+          <label for="email-address" class="block text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('auth.emailAddress') }}</label>
           <div class="mt-1">
             <input v-model="email" id="email-address" name="email" type="email" autocomplete="email" required class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:text-sm" placeholder="you@example.com" />
           </div>
@@ -28,9 +28,9 @@
 
         <div>
           <div class="flex items-center justify-between">
-            <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+            <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('auth.password') }}</label>
             <div class="text-right">
-                <a href="#" class="text-xs text-primary-600 hover:text-primary-500 dark:text-primary-400">Forgot password?</a>
+                <router-link :to="{ name: 'ForgotPassword', query: email ? { email } : {} }" class="text-xs text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ t('auth.forgotPassword') }}</router-link>
             </div>
           </div>
           <div class="mt-1">
@@ -41,14 +41,14 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center">
             <input id="remember-me" name="remember-me" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800" />
-            <label for="remember-me" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Remember me</label>
+            <label for="remember-me" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">{{ t('auth.rememberMe') }}</label>
           </div>
         </div>
 
         <div>
           <button type="submit" :disabled="loading" class="flex w-full justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50 transition-all">
             <span v-if="loading" class="mr-2 animate-spin">⌛</span>
-            Sign in
+            {{ t('auth.signIn') }}
           </button>
         </div>
       </form>
@@ -59,7 +59,7 @@
             <div class="w-full border-t border-slate-300 dark:border-slate-700"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="bg-white px-2 text-slate-500 dark:bg-slate-900">Or continue with</span>
+            <span class="bg-white px-2 text-slate-500 dark:bg-slate-900">{{ t('auth.orContinueWith') }}</span>
           </div>
         </div>
 
@@ -75,16 +75,21 @@
         </div>
       </div>
     </div>
+
+    <InstallButton />
   </AuthLayout>
 </template>
 
 <script setup lang="ts">
+import { t } from '../i18n'
+import { apiErrorMessage } from '../utils/apiError'
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { authApi } from '../api/auth'
 import { useToastStore } from '../stores/toast'
 import AuthLayout from '../components/AuthLayout.vue'
 import PasswordInput from '../components/PasswordInput.vue'
+import InstallButton from '../components/common/InstallButton.vue'
 
 const email = ref('')
 const password = ref('')
@@ -95,26 +100,40 @@ const router = useRouter()
 const route = useRoute()
 const toastStore = useToastStore()
 
+// Why the user is here: a failed social sign-in, or a session the API ended
+const LOGIN_ERRORS: Record<string, string> = {
+  auth_failed: 'auth.authFailed',
+  account_inactive: 'auth.accountInactive',
+  session_expired: 'auth.sessionExpired',
+}
+
 onMounted(() => {
-  if (route.query.error === 'auth_failed') {
-    errorMessage.value = 'Authentication failed. Please try again.'
-    // Clean the URL
-    router.replace({ query: {} })
+  // coming back from "forgot password" / a reset: the email is already known
+  if (typeof route.query.email === 'string') email.value = route.query.email
+
+  const key = typeof route.query.error === 'string' ? LOGIN_ERRORS[route.query.error] : undefined
+  if (key) {
+    errorMessage.value = t(key)
+    // Clean the URL, keeping where the user wanted to go
+    router.replace({ query: { ...route.query, error: undefined } })
   }
 })
 
+/** The page that sent the user to sign in, if it is one of ours. */
+const afterLogin = () => {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/'
+}
+
 const handleLogin = async () => {
   loading.value = true
+  errorMessage.value = null
   try {
     await authApi.login({ email: email.value, password: password.value })
-    // Always redirect to home after login.
-    // The router guard will handle redirecting to the correct page
-    // based on authentication and approval status.
-    // This prevents a white screen for unapproved users trying to access
-    // a protected route directly.
-    router.push({ name: 'Home' })
+    // The router guard sends pending accounts to the waiting screen
+    await router.replace(afterLogin())
   } catch (error) {
-    toastStore.addToast('Login failed. Please check your credentials.', 'error')
+    toastStore.addToast(apiErrorMessage(error, t('auth.loginFailed')), 'error')
   } finally {
     loading.value = false
   }
@@ -125,7 +144,7 @@ const socialLogin = async (provider: 'google' | 'facebook') => {
     const { url } = await authApi.getSocialRedirect(provider)
     window.location.href = url
   } catch (error) {
-    toastStore.addToast(`Failed to redirect to ${provider}. Please try again.`, 'error')
+    toastStore.addToast(t('auth.socialRedirectFailed', { provider }), 'error')
   }
 }
 </script>
