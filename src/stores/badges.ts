@@ -21,7 +21,7 @@ export const useBadgesStore = defineStore('badges', () => {
     refreshing ??= Promise.allSettled([
       notificationsApi.list().then((result) => (unreadNotifications.value = result.unread)),
       authStore.canApprove()
-        ? schedulesApi.fetchPending().then((items) => (pendingApprovals.value = items.length))
+        ? schedulesApi.fetchPending().then((work) => (pendingApprovals.value = work.schedules.length + work.participations.length))
         : Promise.resolve((pendingApprovals.value = 0)),
     ])
       // counters are a convenience: a failed refresh keeps the last numbers, silently

@@ -10,10 +10,12 @@
     </h1>
 
     <p v-if="loading" class="text-sm text-slate-500">{{ t('schedule.loading') }}</p>
-    <p v-else-if="loadError" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+    <p v-else-if="loadError"
+      class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
       {{ loadError }}
     </p>
-    <p v-else-if="options && !options.types.length" class="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
+    <p v-else-if="options && !options.types.length"
+      class="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
       {{ t('schedule.noTypes') }}
     </p>
 
@@ -28,16 +30,17 @@
       <fieldset>
         <legend class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('schedule.type') }}</legend>
         <div class="mt-2 grid gap-2 sm:grid-cols-2">
-          <label v-for="option in options.types" :key="option.id"
-            :class="['flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition',
-              form.schedule_type_id === option.id
-                ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500 dark:bg-primary-500/10'
-                : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600']">
+          <label v-for="option in options.types" :key="option.id" :class="['flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition',
+            form.schedule_type_id === option.id
+              ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500 dark:bg-primary-500/10'
+              : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600']">
             <input type="radio" class="sr-only" :value="option.id" v-model="form.schedule_type_id" />
-            <span class="mt-1 h-3 w-3 shrink-0 rounded-full" :style="{ backgroundColor: option.color || '#94a3b8' }"></span>
+            <span class="mt-1 h-3 w-3 shrink-0 rounded-full"
+              :style="{ backgroundColor: option.color || '#94a3b8' }"></span>
             <span class="min-w-0">
               <span class="block text-sm font-semibold text-slate-900 dark:text-white">{{ option.name }}</span>
-              <span v-if="option.description" class="block text-xs text-slate-500 dark:text-slate-400">{{ option.description }}</span>
+              <span v-if="option.description" class="block text-xs text-slate-500 dark:text-slate-400">{{
+                option.description }}</span>
             </span>
           </label>
         </div>
@@ -48,15 +51,8 @@
         <!-- the type's rules, so nobody has to find out by trial and error -->
         <p v-if="typeRules" class="text-xs text-slate-500 dark:text-slate-400">{{ typeRules }}</p>
 
-        <label v-if="type.all_day" class="flex items-center justify-between gap-4">
-          <span class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('schedule.allDay') }}</span>
-          <button type="button" role="switch" :aria-checked="form.all_day" @click="setAllDay(!form.all_day)"
-            :class="['relative inline-flex h-6 w-11 shrink-0 rounded-full transition', form.all_day ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']">
-            <span :class="['inline-block h-5 w-5 translate-y-0.5 rounded-full bg-white shadow transition', form.all_day ? 'translate-x-5' : 'translate-x-0.5']"></span>
-          </button>
-        </label>
-
-        <div class="grid gap-4 sm:grid-cols-2">
+        <!-- start, end and the all day switch on one row, the switch only as wide as it needs -->
+        <div :class="['grid gap-4', type.range && type.all_day ? 'sm:grid-cols-[1fr_1fr_auto]' : 'sm:grid-cols-2']">
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             {{ t('schedule.start') }}
             <input v-model="form.start" :type="form.all_day ? 'date' : 'datetime-local'" step="300" required
@@ -69,36 +65,54 @@
               :min="form.start || limits.min" :max="limits.max" :class="inputClass" />
             <FieldError :errors="errors.end" />
           </label>
+          <div v-if="type.all_day" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <span id="all-day-label">{{ t('schedule.allDay') }}</span>
+            <!-- same height as the date inputs (p-2 + text-sm + border), so the switch lines up with them -->
+            <div class="mt-1 flex h-[38px] items-center">
+              <button type="button" role="switch" :aria-checked="form.all_day" aria-labelledby="all-day-label"
+                @click="setAllDay(!form.all_day)"
+                :class="['relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900', form.all_day ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']">
+                <span
+                  :class="['inline-block h-5 w-5 rounded-full bg-white shadow transition', form.all_day ? 'translate-x-5' : 'translate-x-0.5']"></span>
+              </button>
+            </div>
+            <FieldError :errors="errors.all_day" />
+          </div>
         </div>
-        <FieldError :errors="errors.all_day" />
       </template>
 
       <!-- Owner: only for people who may book for others -->
-      <label v-if="options.can.book_for_others" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-        {{ t('schedule.owner') }}
-        <select v-model="form.user_id" :class="inputClass">
-          <option :value="null">{{ t('schedule.ownerMe') }}</option>
-          <option v-for="person in options.people" :key="person.id" :value="person.id">{{ person.name }}</option>
-        </select>
+      <div v-if="options.can.book_for_others" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label for="schedule-owner">{{ t('schedule.owner') }}</label>
+        <PersonSelect id="schedule-owner" v-model="form.user_id" :people="options.people"
+          :none="{ label: t('schedule.ownerMe'), name: me?.name ?? t('schedule.ownerMe'), avatar_url: me?.avatar_url }"
+          :search-placeholder="t('schedule.searchPeople')" :empty-text="t('schedule.nobodyFound')" />
         <FieldError :errors="errors.user_id" />
-      </label>
+      </div>
 
       <!-- Participants -->
       <div>
         <p class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('schedule.participants') }}</p>
         <div v-if="selectedPeople.length" class="mt-2 flex flex-wrap gap-1.5">
           <button v-for="person in selectedPeople" :key="person.id" type="button" @click="toggleParticipant(person.id)"
-            class="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-500/15 dark:text-primary-300">
-            {{ person.name }} <XMarkIcon class="h-3.5 w-3.5" />
+            class="inline-flex items-center gap-1.5 rounded-full bg-primary-50 py-1 pl-1 pr-2.5 text-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-500/15 dark:text-primary-300">
+            <UserAvatar :name="person.name" :src="person.avatar_url" size="h-5 w-5" />
+            {{ person.name }}
+            <XMarkIcon class="h-3.5 w-3.5" />
           </button>
         </div>
         <input v-model="peopleSearch" type="search" :placeholder="t('schedule.searchPeople')" :class="inputClass" />
-        <ul v-if="peopleSearch" class="mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700">
+        <ul v-if="peopleSearch"
+          class="mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700">
           <li v-for="person in matchingPeople" :key="person.id">
             <button type="button" @click="toggleParticipant(person.id); peopleSearch = ''"
-              class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800">{{ person.name }}</button>
+              class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800">
+              <UserAvatar :name="person.name" :src="person.avatar_url" />
+              <span class="min-w-0 truncate">{{ person.name }}</span>
+            </button>
           </li>
-          <li v-if="!matchingPeople.length" class="px-3 py-2 text-sm text-slate-500">{{ t('schedule.nobodyFound') }}</li>
+          <li v-if="!matchingPeople.length" class="px-3 py-2 text-sm text-slate-500">{{ t('schedule.nobodyFound') }}
+          </li>
         </ul>
         <FieldError :errors="errors.schedule_users" />
       </div>
@@ -114,7 +128,8 @@
         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
           {{ t('schedule.status') }}
           <select v-model="form.status" :class="inputClass">
-            <option v-for="status in statusChoices" :key="status.value" :value="status.value">{{ status.label }}</option>
+            <option v-for="status in statusChoices" :key="status.value" :value="status.value">{{ status.label }}
+            </option>
           </select>
           <FieldError :errors="errors.status" />
         </label>
@@ -130,7 +145,8 @@
         {{ t('schedule.needsApproval') }}
       </p>
 
-      <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row sm:justify-end">
+      <div
+        class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row sm:justify-end">
         <button type="button" @click="goBack" :disabled="saving"
           class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
           {{ t('common.cancel') }}
@@ -157,12 +173,18 @@ import { toApiDateTime, toInputDate, toInputDateTime } from '../utils/datetime'
 import { defaultStartTime, inputLimits, rulesSummary } from '../utils/scheduleRules'
 import { useToastStore } from '../stores/toast'
 import { useConnectionStore } from '../stores/connection'
+import { useAuthStore } from '../stores/auth'
 import FieldError from '../components/common/FieldError.vue'
+import PersonSelect from '../components/common/PersonSelect.vue'
+import UserAvatar from '../components/common/UserAvatar.vue'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToastStore()
 const connection = useConnectionStore()
+const authStore = useAuthStore()
+// the signed-in user, for the owner's "Me" choice
+const me = computed(() => authStore.user)
 
 const isEdit = computed(() => !!route.params.id)
 const options = ref<ScheduleFormOptions | null>(null)

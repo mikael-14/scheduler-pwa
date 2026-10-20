@@ -8,8 +8,11 @@ export interface ScheduleParticipant {
   id?: number;
   user_id: number;
   name?: string | null;
+  avatar_url?: string | null;
   status?: ScheduleStatus;
   description?: string | null;
+  /** approvers, pending participants: why they cannot be approved yet (null = they can) */
+  approval_problem?: string | null;
 }
 
 /** A schedule as the API returns it (see ScheduleTransformer). */
@@ -25,10 +28,18 @@ export interface Schedule {
   user_id: number;
   schedule_type_id: number;
   schedule_type: { id: number; name: string; color: string | null; all_day: boolean; range: boolean } | null;
-  user: { id: number; name: string } | null;
+  user: { id: number; name: string; avatar_url?: string | null } | null;
   schedule_users: ScheduleParticipant[];
   /** what the signed-in user may do with it */
-  can: { update: boolean; cancel: boolean; delete: boolean; approve: boolean };
+  can: {
+    update: boolean; cancel: boolean; delete: boolean; approve: boolean;
+    /** join / leave someone else's schedule */
+    join?: boolean; leave?: boolean;
+    /** decide on pending participants (people who joined) */
+    approve_participants?: boolean;
+  };
+  /** approvers, pending primary schedules: why it cannot be approved yet (null = it can) */
+  approval_problem?: string | null;
   /** set when it comes from the copy saved on the device (no connection) */
   offline?: boolean;
 }
@@ -73,10 +84,17 @@ export interface ScheduleTypeOption {
 /** The choices of the schedule form (GET /schedules/form-options). */
 export interface ScheduleFormOptions {
   types: ScheduleTypeOption[];
-  people: { id: number; name: string }[];
+  people: { id: number; name: string; avatar_url?: string | null }[];
   statuses: { value: ScheduleStatus; label: string }[];
   can: { book_for_others: boolean; past_dates: boolean; internal_note: boolean };
   timezone: string;
+}
+
+/** A person as the pending list shows them (photo as a full URL; null = initials). */
+export interface SchedulePerson {
+  id: number;
+  name: string;
+  avatar_url?: string | null;
 }
 
 export interface PendingSchedule {
@@ -86,9 +104,31 @@ export interface PendingSchedule {
   all_day: boolean;
   description: string | null;
   status: string;
-  user: { id: number; name: string } | null;
+  user: SchedulePerson | null;
   schedule_type: { id: number; name: string; color: string | null } | null;
+  /** names only (kept for older app versions) */
   participants: string[];
+  /** the same people with their photos (missing from an older API) */
+  participant_people?: SchedulePerson[];
+  /** primary type: why it cannot be approved yet (null = it can) */
+  approval_problem?: string | null;
+}
+
+/** Someone who joined an approved schedule and waits for their own decision. */
+export interface PendingParticipation {
+  schedule_id: number;
+  user: SchedulePerson | null;
+  start: string;
+  end: string | null;
+  all_day: boolean;
+  owner: SchedulePerson | null;
+  schedule_type: { id: number; name: string; color: string | null } | null;
+  approval_problem?: string | null;
+}
+
+export interface PendingWork {
+  schedules: PendingSchedule[];
+  participations: PendingParticipation[];
 }
 
 export interface ScheduleFilters {
@@ -168,10 +208,32 @@ export const schedulesApi = {
     return this.updateSchedule(id, { status: 'cancelled' }, panel);
   },
 
-  /** The approver's work list: schedules waiting for a decision, soonest first. */
-  async fetchPending(panel = 'admin'): Promise<PendingSchedule[]> {
+  /** The approver's work list: schedules and participations waiting for a decision, soonest first. */
+  async fetchPending(panel = 'admin'): Promise<PendingWork> {
     const response = await axiosInstance.get(`/${panel}/schedules/pending`);
+    return { schedules: response.data.data ?? [], participations: response.data.participations ?? [] };
+  },
+
+  /** Join someone else's schedule; the participation waits for approval. */
+  async join(id: number | string, panel = 'admin'): Promise<Schedule> {
+    const response = await axiosInstance.post(`/${panel}/schedules/${id}/participation`);
+    syncOfflineData();
     return response.data.data;
+  },
+
+  async leave(id: number | string, panel = 'admin'): Promise<Schedule> {
+    const response = await axiosInstance.delete(`/${panel}/schedules/${id}/participation`);
+    syncOfflineData();
+    return response.data.data;
+  },
+
+  /** Decide on one participant (someone who joined); the message is sent to them. */
+  async decideParticipant(id: number | string, userId: number, approve: boolean, message?: string, panel = 'admin') {
+    await axiosInstance.post(
+      `/${panel}/schedules/${id}/participants/${userId}/${approve ? 'approve' : 'reject'}`,
+      message ? { message } : {}
+    );
+    syncOfflineData();
   },
 
   /** The optional message is appended to the schedule's internal note (visible to staff only). */
