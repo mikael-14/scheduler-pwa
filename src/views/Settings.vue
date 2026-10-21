@@ -106,6 +106,32 @@
               </button>
             </div>
           </div>
+
+          <!-- All notifications: other people's schedules too -->
+          <div class="mt-6 rounded-xl bg-slate-50 p-4 dark:bg-slate-800/50">
+            <p class="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+              <MegaphoneIcon class="h-4 w-4" />
+              {{ t('settings.allNotifications') }}
+            </p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('settings.allNotificationsHelp') }}</p>
+
+            <div class="mt-4 space-y-3">
+              <div v-for="option in allOptions" :key="option.key" class="flex items-center justify-between gap-4">
+                <p class="flex items-center gap-2 text-sm text-slate-900 dark:text-white">
+                  <component :is="option.icon" class="h-4 w-4" />
+                  {{ option.label }}
+                </p>
+                <button type="button" role="switch" :aria-checked="option.on" :aria-label="option.label"
+                  :disabled="saving || (option.key === 'all_push_notification' && !pushIsSupported)"
+                  @click="option.key === 'all_push_notification' ? toggleAllPush() : toggleAllEmail()"
+                  :class="[option.on ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']"
+                  class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 disabled:opacity-50">
+                  <span :class="option.on ? 'translate-x-5' : 'translate-x-0'"
+                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       </fieldset>
@@ -120,7 +146,8 @@ import {
   ArrowPathIcon,
   BellIcon,
   EnvelopeIcon,
-  DevicePhoneMobileIcon
+  DevicePhoneMobileIcon,
+  MegaphoneIcon
 } from '@heroicons/vue/24/outline'
 import { intlLocale, t } from '../i18n'
 import { authApi } from '../api/auth'
@@ -149,6 +176,13 @@ const pushIsSupported = pushSupported()
 const emailEnabled = computed(() => !!authStore.user?.email_notification)
 // "On" means: the user wants push AND this device is subscribed
 const pushEnabled = computed(() => !!authStore.user?.push_notification && deviceSubscribed.value)
+// "all notifications" (other people's schedules); push needs this device subscribed too
+const allEmailEnabled = computed(() => !!authStore.user?.all_email_notification)
+const allPushEnabled = computed(() => !!authStore.user?.all_push_notification && deviceSubscribed.value)
+const allOptions = computed(() => [
+  { key: 'all_email_notification', label: t('settings.allByEmail'), icon: EnvelopeIcon, on: allEmailEnabled.value },
+  { key: 'all_push_notification', label: t('settings.allByPush'), icon: DevicePhoneMobileIcon, on: allPushEnabled.value },
+])
 
 onMounted(async () => {
   deviceSubscribed.value = await hasDeviceSubscription()
@@ -190,15 +224,20 @@ const handleSync = async () => {
 
 onMounted(loadOfflineStatus)
 
-const save = async (preferences: { email_notification?: boolean; push_notification?: boolean }) => {
+type Preferences = {
+  email_notification?: boolean; push_notification?: boolean
+  all_email_notification?: boolean; all_push_notification?: boolean
+}
+
+const save = async (preferences: Preferences) => {
   await authApi.updateProfile(preferences)
   toastStore.addToast(t('settings.preferencesSaved'), 'success', 2500)
 }
 
-const toggleEmail = async () => {
+const toggleAllEmail = async () => {
   saving.value = true
   try {
-    await save({ email_notification: !emailEnabled.value })
+    await save({ all_email_notification: !allEmailEnabled.value })
   } catch (error) {
     toastStore.addToast(apiErrorMessage(error, t('settings.preferencesFailed')), 'error')
   } finally {
@@ -206,17 +245,24 @@ const toggleEmail = async () => {
   }
 }
 
-const togglePush = async () => {
+/**
+ * Push of either kind needs this device subscribed: turning one on subscribes it, and it is
+ * only unsubscribed when both are off.
+ */
+const setPush = async (field: 'push_notification' | 'all_push_notification', on: boolean) => {
   saving.value = true
   try {
-    if (pushEnabled.value) {
-      await disableDevicePush()
-      deviceSubscribed.value = false
-      await save({ push_notification: false })
-    } else {
-      await enableDevicePush()
+    if (on) {
+      if (!deviceSubscribed.value) await enableDevicePush()
       deviceSubscribed.value = true
-      await save({ push_notification: true })
+      await save({ [field]: true })
+    } else {
+      const other = field === 'push_notification' ? 'all_push_notification' : 'push_notification'
+      if (!authStore.user?.[other]) {
+        await disableDevicePush()
+        deviceSubscribed.value = false
+      }
+      await save({ [field]: false })
     }
   } catch (error) {
     if (error instanceof PushError && error.reason === 'denied') {
@@ -233,4 +279,19 @@ const togglePush = async () => {
     pushDenied.value = pushIsSupported && Notification.permission === 'denied'
   }
 }
+
+const toggleAllPush = () => setPush('all_push_notification', !allPushEnabled.value)
+
+const toggleEmail = async () => {
+  saving.value = true
+  try {
+    await save({ email_notification: !emailEnabled.value })
+  } catch (error) {
+    toastStore.addToast(apiErrorMessage(error, t('settings.preferencesFailed')), 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+const togglePush = () => setPush('push_notification', !pushEnabled.value)
 </script>

@@ -52,7 +52,7 @@
         <p v-if="typeRules" class="text-xs text-slate-500 dark:text-slate-400">{{ typeRules }}</p>
 
         <!-- start, end and the all day switch on one row, the switch only as wide as it needs -->
-        <div :class="['grid gap-4', type.range && type.all_day ? 'sm:grid-cols-[1fr_1fr_auto]' : 'sm:grid-cols-2']">
+        <div :class="['grid gap-4', type.range && allDayOffered ? 'sm:grid-cols-[1fr_1fr_auto]' : 'sm:grid-cols-2']">
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             {{ t('schedule.start') }}
             <input v-model="form.start" :type="form.all_day ? 'date' : 'datetime-local'" step="300" required
@@ -65,7 +65,7 @@
               :min="form.start || limits.min" :max="limits.max" :class="inputClass" />
             <FieldError :errors="errors.end" />
           </label>
-          <div v-if="type.all_day" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <div v-if="allDayOffered" class="text-sm font-medium text-slate-700 dark:text-slate-300">
             <span id="all-day-label">{{ t('schedule.allDay') }}</span>
             <!-- same height as the date inputs (p-2 + text-sm + border), so the switch lines up with them -->
             <div class="mt-1 flex h-[38px] items-center">
@@ -212,6 +212,11 @@ const inputClass = 'mt-1 block w-full rounded-lg border border-slate-300 bg-whit
 
 const type = computed(() => options.value?.types.find((option) => option.id === form.schedule_type_id) ?? null)
 
+// "all day" (no hours): on types that allow it, for people allowed to give no hours; an
+// all-day schedule opened by someone else keeps the switch, so it can be turned off
+const openedAllDay = ref(false)
+const allDayOffered = computed(() => !!type.value?.all_day && (!!options.value?.can.all_day || openedAllDay.value))
+
 // The type's rules (utils/scheduleRules, the same the API enforces): when it may be booked,
 // whether it needs an end; its hours only shape the calendar, so they are not shown as a rule
 const typeRules = computed(() => rulesSummary(type.value))
@@ -260,7 +265,7 @@ const setAllDay = (value: boolean) => {
 // A type that does not allow all day, or has no end, drops those values
 watch(type, (current) => {
   if (!current) return
-  if (!current.all_day && form.all_day) setAllDay(false)
+  if (!allDayOffered.value && form.all_day) setAllDay(false)
   if (!current.range) form.end = ''
   else if (!form.end && form.start && !form.all_day) form.end = plusOneHour(form.start)
   else if (!form.end && form.start) form.end = form.start
@@ -297,6 +302,7 @@ async function load() {
       }
       form.schedule_type_id = schedule.schedule_type_id
       form.all_day = schedule.all_day
+      openedAllDay.value = schedule.all_day
       form.start = schedule.all_day ? toInputDate(schedule.start) : toInputDateTime(schedule.start)
       form.end = schedule.all_day ? toInputDate(schedule.end) : toInputDateTime(schedule.end)
       form.description = schedule.description ?? ''
@@ -324,7 +330,7 @@ function payload(): ScheduleInput {
     schedule_type_id: current.id,
     start: toApiDateTime(form.start, form.all_day),
     end: current.range && form.end ? toApiDateTime(form.end, form.all_day) : null,
-    all_day: current.all_day ? form.all_day : false,
+    all_day: allDayOffered.value ? form.all_day : false,
     description: form.description.trim() || null,
     schedule_users: form.participants.filter((id) => id !== form.user_id).map((user_id) => ({ user_id })),
   }

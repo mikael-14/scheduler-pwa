@@ -63,8 +63,11 @@ function readSnooze(): number {
   }
 }
 
+// either kind of push (personal or "all notifications") needs this device subscribed
+const wantsPush = () => authStore.user?.push_notification !== false || authStore.user?.all_push_notification === true
+
 const variant = computed<'ask' | 'blocked' | null>(() => {
-  if (!authStore.isApproved() || authStore.user?.push_notification === false) return null
+  if (!authStore.isApproved() || !wantsPush()) return null
   if (subscribed.value || snoozedUntil.value > Date.now()) return null
   if (permission.value === 'default') return 'ask'
   if (permission.value === 'denied') return 'blocked'
@@ -73,7 +76,7 @@ const variant = computed<'ask' | 'blocked' | null>(() => {
 
 async function check() {
   permission.value = pushPermission()
-  if (permission.value === 'unsupported' || authStore.user?.push_notification === false) return
+  if (permission.value === 'unsupported' || !wantsPush()) return
   if (await restoreDevicePush()) toast.success(t('push.restored'))
   subscribed.value = await hasDeviceSubscription()
 }

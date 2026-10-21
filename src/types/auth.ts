@@ -8,6 +8,9 @@ export interface User {
   locale?: string;
   email_notification?: boolean;
   push_notification?: boolean;
+  /** "all notifications": other people's schedules too */
+  all_email_notification?: boolean;
+  all_push_notification?: boolean;
   approved_at?: string | null;
   /** false for accounts made with Google / Facebook that never set a password */
   has_password?: boolean;

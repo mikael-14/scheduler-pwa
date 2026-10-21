@@ -60,7 +60,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  BellIcon, CalendarDaysIcon, CheckBadgeIcon, ClockIcon, ExclamationTriangleIcon, MegaphoneIcon, PencilSquareIcon, UserCircleIcon, UserMinusIcon, UserPlusIcon,
+  BellIcon, CalendarDaysIcon, CheckBadgeIcon, ClockIcon, ExclamationTriangleIcon, MegaphoneIcon, PencilSquareIcon, UserCircleIcon, UserGroupIcon, UserMinusIcon, UserPlusIcon,
 } from '@heroicons/vue/24/outline'
 import { ChevronRightIcon } from '@heroicons/vue/20/solid'
 import { t, intlLocale } from '../i18n'
@@ -96,6 +96,7 @@ const ICONS: Record<string, unknown> = {
   booked_for_you: CalendarDaysIcon,
   schedule_updated: PencilSquareIcon,
   coverage: ExclamationTriangleIcon,
+  activity: UserGroupIcon,
   announcement: MegaphoneIcon,
   account: UserCircleIcon,
 }
