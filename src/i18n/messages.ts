@@ -241,6 +241,7 @@ export const messages: Record<Locale, Record<string, string>> = {
 
     // calendar
     'calendar.title': 'Agendador',
+    'calendar.loading': 'A carregar o calendário…',
     'calendar.monthView': 'Vista mensal',
     'calendar.weekView': 'Vista semanal',
     'calendar.dayView': 'Vista diária',
@@ -574,6 +575,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'language.saveFailed': 'Unable to save language preference. Please try again.',
 
     'calendar.title': 'Scheduler',
+    'calendar.loading': 'Loading the calendar…',
     'calendar.monthView': 'Month View',
     'calendar.weekView': 'Weekly View',
     'calendar.dayView': 'Daily View',

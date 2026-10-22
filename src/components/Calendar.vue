@@ -64,17 +64,18 @@
       {{ store.offlineComplete ? t('offline.calendarSaved') : t('offline.calendarOutside') }}
     </p>
 
-    <div class="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+    <!-- only the calendar shows it is loading; the header and buttons stay usable -->
+    <div class="relative rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4"
+      :aria-busy="loading">
       <FullCalendar
         ref="calendarRef"
         :options="calendarOptions"
         class="filament-calendar"
       />
-    </div>
 
-    <div v-if="store.loading && store.events.length === 0" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-[2px]">
-      <div class="rounded-xl bg-white p-4 shadow-xl dark:bg-slate-800">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
+      <div v-if="loading" class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/60 dark:bg-slate-900/60">
+        <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent" role="status"
+          :aria-label="t('calendar.loading')"></div>
       </div>
     </div>
   </div>
@@ -132,8 +133,35 @@ const headingZone = CALENDAR_TIMEZONE
 const store = useSchedulesStore()
 const calendarRef = ref<any>(null)
 
+// Where the user was (view and date), kept on the device for when they come back, also after
+// closing the app. Agenda and My agenda each keep their own. Storage can be missing (private
+// mode): then it just starts fresh.
+const VIEWS = ['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listWeek']
+const storageKey = `calendar.${props.mine ? 'mine' : 'all'}`
+
+function readStored(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function writeStored(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // not saved: nothing else depends on it
+  }
+}
+
+const savedView = readStored(`${storageKey}.view`)
+const initialView = savedView && VIEWS.includes(savedView) ? savedView : 'listWeek'
+const savedDate = readStored(`${storageKey}.date`)
+const initialDate = savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate) ? savedDate : undefined
+
 const currentDate = ref(new Date())
-const currentView = ref('timeGridWeek')
+const currentView = ref(initialView)
 
 // Fetches only the events inside the visible date range.
 // FullCalendar calls this automatically on mount, view change, and prev/next navigation.
@@ -168,10 +196,16 @@ function toCalendarEvent(schedule: Schedule) {
   }
 }
 
+// FullCalendar says when it is fetching the visible range (mount, view change, prev/next)
+const loading = ref(false)
+
 // Keeps the header date/view label in sync whenever the visible range changes
 const handleDatesSet = (info: any) => {
   currentDate.value = info.view.currentStart
   currentView.value = info.view.type
+  writeStored(`${storageKey}.view`, info.view.type)
+  // with a named timezone FullCalendar's dates are UTC-coerced: the UTC date is the calendar's date
+  writeStored(`${storageKey}.date`, info.view.currentStart.toISOString().slice(0, 10))
 }
 
 // All configurations must live here for FullCalendar Vue 3
@@ -179,7 +213,8 @@ const calendarOptions = computed(() => ({
   plugins: [listPlugin, dayGridPlugin, timeGridPlugin, interactionPlugin, luxonPlugin],
   locales: [ptLocale],
   locale: locale.value,
-  initialView: 'listWeek',
+  initialView,
+  ...(initialDate ? { initialDate } : {}),
   events: fetchEventsForRange,
   headerToolbar: false as const, // Disables original buttons since you built beautiful custom ones
   allDaySlot: true,
@@ -188,6 +223,7 @@ const calendarOptions = computed(() => ({
   height: 'auto',
   nowIndicator: true,
   datesSet: handleDatesSet,
+  loading: (isLoading: boolean) => (loading.value = isLoading),
   // Format side axis time labels (e.g., 00:00, 01:00 ... 23:00)
   slotLabelFormat: {
     hour: '2-digit' as const,

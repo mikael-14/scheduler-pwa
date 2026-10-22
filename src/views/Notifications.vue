@@ -8,7 +8,7 @@
       </button>
     </div>
 
-    <!-- All / Unread -->
+    <!-- Unread / All -->
     <div class="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist">
       <button v-for="tab in tabs" :key="tab.value" type="button" role="tab" :aria-selected="filter === tab.value"
         @click="filter = tab.value"
@@ -79,11 +79,12 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 // shown from the copy saved on the device (no connection)
 const offline = ref(false)
-const filter = ref<'all' | 'unread'>('all')
+// unread first: what still needs a look
+const filter = ref<'all' | 'unread'>('unread')
 
 const tabs = computed(() => [
-  { value: 'all' as const, label: t('notifications.all'), count: 0 },
   { value: 'unread' as const, label: t('notifications.unreadTab'), count: unread.value },
+  { value: 'all' as const, label: t('notifications.all'), count: 0 },
 ])
 const visible = computed(() => filter.value === 'unread' ? items.value.filter((item) => !item.read_at) : items.value)
 
