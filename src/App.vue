@@ -194,6 +194,8 @@ const toastStore = useToastStore()
 const user = computed(() => authStore.user)
 const router = useRouter()
 const isMobileMenuOpen = ref(false)
+// a new page closes the phone menu, however it was reached (its backdrop would cover the page)
+router.afterEach(() => (isMobileMenuOpen.value = false))
 const languageMenuOpen = ref(false)
 const selectedLanguage = computed(() => locale.value)
 const languageOptions: Array<{ value: 'pt' | 'en'; label: string }> = [
@@ -240,6 +242,8 @@ watch(isDark, (val) => {
 })
 
 const logout = async () => {
+  // close the phone menu first: once signed out its drawer is gone, but its grey backdrop stayed
+  isMobileMenuOpen.value = false
   await authStore.logout(router)
 }
 
