@@ -1,7 +1,7 @@
 <template>
-  <div class="py-6 sm:p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-2xl font-semibold">{{ t('agenda.title') }}</h2>
+  <div class="sm:p-6">
+    <div class="mb-3 flex items-center justify-between sm:mb-4">
+      <h2 class="text-xl font-semibold sm:text-2xl">{{ t('agenda.title') }}</h2>
     </div>
     <Calendar />
   </div>

@@ -104,7 +104,7 @@
 
       <!-- Main Content Area -->
       <main :class="authStore.isAuthenticated() ? 'lg:pl-64' : ''">
-        <div class="mx-auto max-w-7xl px-4 pt-8 pb-24 sm:px-6 lg:px-8 lg:pb-8">
+        <div class="mx-auto max-w-7xl px-4 pt-4 pb-24 sm:px-6 sm:pt-8 lg:px-8 lg:pb-8">
           <!-- push wanted but not working on this device: offer to fix it -->
           <PushPrompt v-if="authStore.isAuthenticated() && authStore.isApproved()" />
           <router-view />

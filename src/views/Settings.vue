@@ -1,7 +1,7 @@
 <template>
-  <div class="max-w-4xl mx-auto space-y-8">
+  <div class="max-w-4xl mx-auto space-y-6 sm:space-y-8">
     <header>
-      <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{{ t('settings.title') }}</h1>
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">{{ t('settings.title') }}</h1>
       <p class="mt-2 text-slate-600 dark:text-slate-400">{{ t('settings.subtitle') }}</p>
     </header>
 

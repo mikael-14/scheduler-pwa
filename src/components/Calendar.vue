@@ -1,8 +1,11 @@
 <template>
-  <div class="space-y-6">
-    <div class="page-card border-slate-200 bg-white px-4 py-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+  <!-- phones: a compact header (view buttons, then the period beside the arrows) so the calendar
+       starts high up; the page already has its title and the view button says the view.
+       pb-16: room to scroll the last schedules out from under the floating "New event" button -->
+  <div :class="['space-y-3 sm:space-y-6', canCreate ? 'pb-16 sm:pb-0' : '']">
+    <div class="page-card border-slate-200 bg-white px-4 py-3 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div class="hidden sm:block">
           <p class="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">{{ t('calendar.title') }}</p>
           <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{{ currentViewTitle }}</h1>
         </div>
@@ -16,18 +19,22 @@
           </button>
         </div>
         
-        <div class="flex items-center gap-2">
-          <button @click="goPrev" class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-            <ChevronLeftIcon class="h-5 w-5" />
-          </button>
-          <button @click="goToday" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">{{ t('calendar.today') }}</button>
-          <button @click="goNext" class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-            <ChevronRightIcon class="h-5 w-5" />
-          </button>
+        <div class="flex items-center justify-between gap-2">
+          <!-- phones: the period here, beside the arrows (wider: in the row below) -->
+          <p class="min-w-0 truncate text-sm font-bold text-slate-900 dark:text-white sm:hidden">{{ dateHeading }}</p>
+          <div class="flex shrink-0 items-center gap-2">
+            <button @click="goPrev" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:h-10 sm:w-10">
+              <ChevronLeftIcon class="h-5 w-5" />
+            </button>
+            <button @click="goToday" class="rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 sm:px-4">{{ t('calendar.today') }}</button>
+            <button @click="goNext" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:h-10 sm:w-10">
+              <ChevronRightIcon class="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="mt-6 flex items-center justify-between border-t border-slate-100 pt-6 dark:border-slate-800">
+      <div class="mt-6 hidden items-center justify-between border-t border-slate-100 pt-6 dark:border-slate-800 sm:flex">
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-400">
             <CalendarIcon class="h-5 w-5" />
@@ -44,7 +51,7 @@
       </div>
 
       <!-- the day (or slot) tapped last: "New event" starts there -->
-      <div v-if="selected" class="mt-4 flex items-center justify-between gap-2 rounded-xl bg-primary-50 px-3 py-2 text-sm text-primary-800 dark:bg-primary-500/10 dark:text-primary-300">
+      <div v-if="selected" class="mt-3 flex items-center justify-between gap-2 rounded-xl bg-primary-50 px-3 py-2 text-sm sm:mt-4 text-primary-800 dark:bg-primary-500/10 dark:text-primary-300">
         <span><span class="font-medium">{{ t('calendar.selected') }}:</span> <span class="font-bold">{{ selectedLabel }}</span></span>
         <button type="button" @click="selected = null" :aria-label="t('calendar.clearSelection')"
           class="inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-primary-100 dark:hover:bg-primary-500/20">
@@ -52,6 +59,12 @@
         </button>
       </div>
     </div>
+
+    <!-- phones: "New event" as a floating button above the tab bar, as Google Calendar -->
+    <button v-if="canCreate" type="button" @click="openCreateModal" :aria-label="t('calendar.newEvent')"
+      class="fixed bottom-20 right-4 z-30 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-600/30 transition hover:bg-primary-500 active:scale-95 sm:hidden">
+      <PlusIcon class="h-7 w-7" />
+    </button>
 
     <!-- no connection: the copy saved on the device (this week and next) -->
     <p v-if="store.offline" class="page-card flex items-start gap-2 border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">

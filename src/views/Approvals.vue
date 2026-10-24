@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-3xl space-y-4 py-6 sm:p-6">
+  <div class="mx-auto max-w-3xl space-y-4 sm:p-6">
     <div class="flex items-center justify-between">
       <div>
         <h2 class="text-xl font-semibold">{{ t('approvals.title') }}</h2>
