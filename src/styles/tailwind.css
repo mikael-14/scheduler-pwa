@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* A page's card. On phones it runs edge to edge (the -mx-4 undoes the layout's px-4, see App.vue)
+     with only its top and bottom borders: give it px-4 there so its text lines up with the page's.
+     From sm up it is the rounded, bordered box. Colours and padding stay on the element. */
+  .page-card {
+    @apply -mx-4 border-y sm:mx-0 sm:rounded-2xl sm:border;
+  }
+}
+
 /* App base styles */
 html, body, #app {
   height: 100%;

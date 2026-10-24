@@ -3,7 +3,7 @@
     <template #heading>{{ t('reset.title') }}</template>
     <template #subheading>{{ email }}</template>
 
-    <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="page-card mt-8 border-slate-200 bg-white px-4 py-8 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900">
       <p v-if="!token || !email" class="text-sm text-red-600 dark:text-red-400">{{ t('reset.badLink') }}</p>
 
       <form v-else class="space-y-6" @submit.prevent="submit">

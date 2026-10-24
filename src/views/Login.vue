@@ -6,7 +6,7 @@
       <router-link to="/register" class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ t('auth.createAccountLink') }}</router-link>
     </template>
 
-    <div class="mt-8 rounded-2xl bg-white p-8 shadow-sm dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+    <div class="page-card mt-8 border-slate-200 bg-white px-4 py-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
       <form class="space-y-6" @submit.prevent="handleLogin">
         <!-- Error Notification -->
         <div v-if="errorMessage" class="rounded-md bg-red-50 p-4 border border-red-200 dark:bg-red-500/10 dark:border-red-500/30">

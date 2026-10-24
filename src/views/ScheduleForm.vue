@@ -11,16 +11,16 @@
 
     <p v-if="loading" class="text-sm text-slate-500">{{ t('schedule.loading') }}</p>
     <p v-else-if="loadError"
-      class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+      class="page-card border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
       {{ loadError }}
     </p>
     <p v-else-if="options && !options.types.length"
-      class="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
+      class="page-card border-dashed border-slate-300 px-4 py-6 text-center sm:p-6 text-sm text-slate-500 dark:border-slate-700">
       {{ t('schedule.noTypes') }}
     </p>
 
     <form v-else-if="options" @submit.prevent="submit" novalidate
-      class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      class="page-card space-y-5 border-slate-200 bg-white px-4 py-6 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
       <p v-if="connection.status !== 'online'"
         class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
         {{ t('schedule.offlineHint') }}

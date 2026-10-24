@@ -8,7 +8,7 @@
 
   <!-- card (login page, settings) -->
   <div v-else-if="installMode"
-    class="flex flex-col gap-3 rounded-2xl border border-primary-200 bg-primary-50 p-4 text-sm dark:border-primary-500/30 dark:bg-primary-500/10 sm:flex-row sm:items-center">
+    class="page-card flex flex-col gap-3 border-primary-200 bg-primary-50 p-4 text-sm dark:border-primary-500/30 dark:bg-primary-500/10 sm:flex-row sm:items-center">
     <div class="flex flex-1 items-center gap-3">
       <img src="/img/icons/icon-192x192.png" alt="" class="h-10 w-10 shrink-0 rounded-xl" />
       <p class="text-slate-700 dark:text-slate-200">{{ t('install.body') }}</p>

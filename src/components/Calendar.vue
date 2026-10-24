@@ -1,32 +1,18 @@
 <template>
   <div class="space-y-6">
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="page-card border-slate-200 bg-white px-4 py-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p class="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">{{ t('calendar.title') }}</p>
           <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{{ currentViewTitle }}</h1>
         </div>
 
-        <div class="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800 self-start sm:self-auto">
-          <button 
-            @click="changeView('dayGridMonth')" 
-            :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', currentView === 'dayGridMonth' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']">
-            {{ t('calendar.month') }}
-          </button>
-          <button 
-            @click="changeView('timeGridWeek')" 
-            :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', currentView === 'timeGridWeek' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']">
-            {{ t('calendar.week') }}
-          </button>
-          <button 
-            @click="changeView('timeGridDay')" 
-            :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', currentView === 'timeGridDay' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']">
-            {{ t('calendar.day') }}
-          </button>
-          <button 
-            @click="changeView('listWeek')" 
-            :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', currentView === 'listWeek' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']">
-            {{ t('calendar.list') }}
+        <!-- phones: 3 × 2, so each column pairs the views of one period (month, week); a row from sm up -->
+        <div class="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800 sm:flex sm:items-center sm:self-auto">
+          <button v-for="view in VIEW_BUTTONS" :key="view.name" type="button"
+            @click="changeView(view.name)"
+            :class="['whitespace-nowrap px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', currentView === view.name ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']">
+            {{ t(view.label) }}
           </button>
         </div>
         
@@ -56,22 +42,51 @@
           <span>{{ t('calendar.newEvent') }}</span>
         </button>
       </div>
+
+      <!-- the day (or slot) tapped last: "New event" starts there -->
+      <div v-if="selected" class="mt-4 flex items-center justify-between gap-2 rounded-xl bg-primary-50 px-3 py-2 text-sm text-primary-800 dark:bg-primary-500/10 dark:text-primary-300">
+        <span><span class="font-medium">{{ t('calendar.selected') }}:</span> <span class="font-bold">{{ selectedLabel }}</span></span>
+        <button type="button" @click="selected = null" :aria-label="t('calendar.clearSelection')"
+          class="inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-primary-100 dark:hover:bg-primary-500/20">
+          <XMarkIcon class="h-4 w-4" />
+        </button>
+      </div>
     </div>
 
     <!-- no connection: the copy saved on the device (this week and next) -->
-    <p v-if="store.offline" class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+    <p v-if="store.offline" class="page-card flex items-start gap-2 border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
       <SignalSlashIcon class="mt-0.5 h-4 w-4 shrink-0" />
       {{ store.offlineComplete ? t('offline.calendarSaved') : t('offline.calendarOutside') }}
     </p>
 
     <!-- only the calendar shows it is loading; the header and buttons stay usable -->
-    <div class="relative rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4"
+    <!-- little side padding on phones: every pixel of width counts -->
+    <div class="page-card relative overflow-hidden border-slate-200 bg-white px-1 py-2 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4"
       :aria-busy="loading">
-      <FullCalendar
-        ref="calendarRef"
-        :options="calendarOptions"
-        class="filament-calendar"
-      />
+      <!-- swiping sideways moves to the previous / next period; the calendar follows the finger -->
+      <div ref="swipeArea" class="touch-pan-y" :style="swipeStyle">
+        <FullCalendar
+          ref="calendarRef"
+          :options="calendarOptions"
+          class="filament-calendar"
+        />
+      </div>
+
+      <!-- FullCalendar's cells carry their day: highlight the selected one -->
+      <component :is="'style'" v-if="selectedDay">
+        .filament-calendar .fc-daygrid-day[data-date="{{ selectedDay }}"],
+        .filament-calendar .fc-timegrid-col[data-date="{{ selectedDay }}"] { background-color: var(--selected-day-bg); }
+      </component>
+
+      <!-- the compact views (see compactViewsPlugin), drawn inside FullCalendar -->
+      <Teleport :to="compactHosts.weekPlanner">
+        <WeekPlanner v-if="currentView === 'weekPlanner' && rangeStart" :start="rangeStart" :events="compactEvents"
+          :selected="selectedDay" :today="today" @select="selected = $event" @open="openSchedule" />
+      </Teleport>
+      <Teleport :to="compactHosts.monthDots">
+        <MonthDots v-if="currentView === 'monthDots' && rangeStart" :start="rangeStart" :events="compactEvents"
+          :selected="selectedDay" :today="today" :first-day="firstDay" @select="selected = $event" @open="openSchedule" />
+      </Teleport>
 
       <div v-if="loading" class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/60 dark:bg-slate-900/60">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent" role="status"
@@ -83,7 +98,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useSwipe } from '@vueuse/core'
 import FullCalendar from '@fullcalendar/vue3'
+import { createPlugin } from '@fullcalendar/core'
 import dayGridPlugin from '@fullcalendar/daygrid' // Added month layout support
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -93,8 +110,12 @@ import {
   ChevronLeftIcon, 
   ChevronRightIcon, 
   CalendarIcon, 
-  PlusIcon 
+  PlusIcon,
+  XMarkIcon
 } from '@heroicons/vue/20/solid'
+import WeekPlanner from './WeekPlanner.vue'
+import MonthDots from './MonthDots.vue'
+import type { DayEvent } from '../utils/calendarDays'
 import ptLocale from '@fullcalendar/core/locales/pt'
 // named timezones (the shelter's, see utils/datetime): without it FullCalendar only knows UTC and local
 import luxonPlugin from '@fullcalendar/luxon3'
@@ -136,8 +157,22 @@ const calendarRef = ref<any>(null)
 // Where the user was (view and date), kept on the device for when they come back, also after
 // closing the app. Agenda and My agenda each keep their own. Storage can be missing (private
 // mode): then it just starts fresh.
-const VIEWS = ['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listWeek']
+const VIEWS = ['dayGridMonth', 'monthDots', 'timeGridWeek', 'weekPlanner', 'timeGridDay', 'listWeek']
 const storageKey = `calendar.${props.mine ? 'mine' : 'all'}`
+
+// The view buttons, in the order of the phone's 3 × 2 grid
+const VIEW_BUTTONS = [
+  { name: 'dayGridMonth', label: 'calendar.month' },
+  { name: 'timeGridWeek', label: 'calendar.week' },
+  { name: 'timeGridDay', label: 'calendar.day' },
+  { name: 'monthDots', label: 'calendar.compactMonth' },
+  { name: 'weekPlanner', label: 'calendar.planner' },
+  { name: 'listWeek', label: 'calendar.list' },
+]
+
+// The compact views (see compactViewsPlugin) show the same period as these: same header labels
+const SAME_PERIOD: Record<string, string> = { monthDots: 'dayGridMonth', weekPlanner: 'timeGridWeek' }
+const baseView = (view: string) => SAME_PERIOD[view] ?? view
 
 function readStored(key: string): string | null {
   try {
@@ -201,6 +236,7 @@ const loading = ref(false)
 
 // Keeps the header date/view label in sync whenever the visible range changes
 const handleDatesSet = (info: any) => {
+  rangeStart.value = info.startStr.slice(0, 10)
   currentDate.value = info.view.currentStart
   currentView.value = info.view.type
   writeStored(`${storageKey}.view`, info.view.type)
@@ -208,9 +244,40 @@ const handleDatesSet = (info: any) => {
   writeStored(`${storageKey}.date`, info.view.currentStart.toISOString().slice(0, 10))
 }
 
+// The compact views, made for phones: the week as tweek.so (WeekPlanner: the days one under the other, each with
+// its schedules) and the month as Google Calendar (MonthDots: a dot per schedule, the chosen
+// day's list below). FullCalendar keeps doing the dates, navigation and fetching; each view
+// shows a box that its component is teleported into, fed from the events FullCalendar has loaded.
+const compactHosts = { weekPlanner: document.createElement('div'), monthDots: document.createElement('div') }
+const compactViewsPlugin = createPlugin({
+  name: 'compactViews',
+  views: {
+    weekPlanner: { duration: { weeks: 1 }, content: () => ({ domNodes: [compactHosts.weekPlanner] }) },
+    monthDots: { duration: { months: 1 }, content: () => ({ domNodes: [compactHosts.monthDots] }) },
+  },
+})
+// first day of the visible range and the loaded events, in the calendar's timezone
+const rangeStart = ref('')
+const compactEvents = ref<DayEvent[]>([])
+const today = dateToInput(new Date(), false)
+// as FullCalendar's locales: Monday in Portuguese, Sunday in English
+const firstDay = computed(() => (locale.value === 'pt' ? 1 : 0))
+
+const handleEventsSet = (events: any[]) => {
+  compactEvents.value = events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    start: event.startStr,
+    end: event.endStr,
+    allDay: event.allDay,
+    status: event.extendedProps?.status,
+    typeColor: event.extendedProps?.typeColor,
+  }))
+}
+
 // All configurations must live here for FullCalendar Vue 3
 const calendarOptions = computed(() => ({
-  plugins: [listPlugin, dayGridPlugin, timeGridPlugin, interactionPlugin, luxonPlugin],
+  plugins: [listPlugin, dayGridPlugin, timeGridPlugin, interactionPlugin, luxonPlugin, compactViewsPlugin],
   locales: [ptLocale],
   locale: locale.value,
   initialView,
@@ -247,11 +314,12 @@ const calendarOptions = computed(() => ({
   eventClick: handleEventClick,
   dateClick: handleDateClick,
   eventDidMount: handleEventDidMount,
+  eventsSet: handleEventsSet,
 }))
 
 // Changes the text of the main header depending on which view is selected
 const currentViewTitle = computed(() => {
-  switch (currentView.value) {
+  switch (baseView(currentView.value)) {
     case 'dayGridMonth': return t('calendar.monthView')
     case 'timeGridDay': return t('calendar.dayView')
     case 'timeGridWeek':
@@ -262,7 +330,7 @@ const currentViewTitle = computed(() => {
 
 // Dynamically computes current scope label depending on view context
 const dateHeading = computed(() => {
-  if (currentView.value === 'dayGridMonth') {
+  if (baseView(currentView.value) === 'dayGridMonth') {
     return new Intl.DateTimeFormat(intlLocale(), { timeZone: headingZone, month: 'long', year: 'numeric' }).format(currentDate.value)
   }
 
@@ -304,20 +372,86 @@ const goToday = () => {
   calendarRef.value?.getApi().today()
 }
 
+// Swipe sideways to the previous / next period, as Google Calendar: the calendar follows the
+// finger, and past SWIPE_DISTANCE slides out while the new period slides in from the other side.
+const SWIPE_DISTANCE = 60
+const SLIDE_MS = 180
+const swipeArea = ref<HTMLElement | null>(null)
+const swipeOffset = ref(0)
+const sliding = ref(false)
+// a gesture is either a swipe or a page scroll, decided by its first move
+let swipeAxis: 'x' | 'y' | null = null
+
+const { lengthX, lengthY } = useSwipe(swipeArea, {
+  passive: true,
+  threshold: 10,
+  onSwipeStart: () => (swipeAxis = null),
+  onSwipe: () => {
+    if (sliding.value) return
+    swipeAxis ??= Math.abs(lengthX.value) > Math.abs(lengthY.value) ? 'x' : 'y'
+    if (swipeAxis === 'x') swipeOffset.value = -lengthX.value
+  },
+  onSwipeEnd: () => {
+    if (sliding.value || swipeAxis !== 'x') return
+    if (Math.abs(swipeOffset.value) < SWIPE_DISTANCE) slideTo(0)
+    else slideAway(swipeOffset.value < 0 ? 'next' : 'prev')
+  },
+})
+
+const swipeStyle = computed(() => ({
+  transform: swipeOffset.value ? `translateX(${swipeOffset.value}px)` : undefined,
+  transition: sliding.value ? `transform ${SLIDE_MS}ms ease-out` : undefined,
+}))
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+
+async function slideTo(offset: number) {
+  sliding.value = true
+  swipeOffset.value = offset
+  await wait(SLIDE_MS)
+  sliding.value = false
+}
+
+async function slideAway(direction: 'prev' | 'next') {
+  const width = swipeArea.value?.clientWidth ?? 0
+  const sign = direction === 'next' ? -1 : 1
+  await slideTo(sign * width)
+  if (direction === 'next') goNext()
+  else goPrev()
+  // the new period comes in from the other side
+  swipeOffset.value = -sign * width
+  await nextFrame()
+  await slideTo(0)
+}
+
+/** The day ("YYYY-MM-DD") or slot ("YYYY-MM-DDTHH:mm") tapped last, in the calendar's timezone. */
+const selected = ref<string | null>(null)
+const selectedDay = computed(() => selected.value?.slice(0, 10) ?? null)
+const selectedLabel = computed(() => {
+  if (!selected.value) return ''
+  // calendar days, not moments: formatted in UTC so nothing shifts
+  const day = new Intl.DateTimeFormat(intlLocale(), { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' })
+    .format(new Date(`${selected.value.slice(0, 10)}T00:00:00Z`))
+  return selected.value.includes('T') ? `${day} · ${selected.value.slice(11, 16)}` : day
+})
+
+// "New event" starts at the selected day / slot, if any; a day only lets the form pick the time
 const openCreateModal = () => {
-  router.push({ name: 'ScheduleNew' })
+  router.push({ name: 'ScheduleNew', query: selected.value ? { start: selected.value } : {} })
 }
 
-// A tap on an empty slot starts a new schedule there
+// A tap on a day or slot selects it (the button then creates there)
 const handleDateClick = (info: any) => {
-  if (!canCreate.value) return
-  // a day cell (month view, all-day row) gives a date only; the form picks a default time
-  router.push({ name: 'ScheduleNew', query: { start: dateToInput(info.date, !info.allDay) } })
+  // dateStr is in the calendar's timezone: "YYYY-MM-DD" (day cell, all-day row) or "YYYY-MM-DDTHH:mm:ss+01:00"
+  selected.value = info.allDay ? info.dateStr.slice(0, 10) : info.dateStr.slice(0, 16)
 }
 
-const handleEventClick = (info: any) => {
-  router.push({ name: 'ScheduleDetail', params: { id: info.event.id } })
+const openSchedule = (id: string) => {
+  router.push({ name: 'ScheduleDetail', params: { id } })
 }
+
+const handleEventClick = (info: any) => openSchedule(info.event.id)
 
 // The type's colour as a stripe on the left of each schedule
 const handleEventDidMount = (info: any) => {
@@ -333,11 +467,13 @@ const handleEventDidMount = (info: any) => {
   --fc-button-bg-color: #ffffff;
   --fc-button-text-color: #64748b;
   --fc-today-bg-color: rgba(16, 185, 129, 0.05);
+  --selected-day-bg: rgba(16, 185, 129, 0.16);
 }
 
 .dark .filament-calendar {
   --fc-border-color: rgba(30, 41, 59, 0.8);
   --fc-today-bg-color: rgba(16, 185, 129, 0.1);
+  --selected-day-bg: rgba(16, 185, 129, 0.22);
 }
 
 .fc-theme-standard .fc-scrollgrid {

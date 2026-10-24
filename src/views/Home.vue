@@ -38,10 +38,10 @@
     <section>
       <h2 :class="[sectionTitle, 'mb-2']">{{ t('dashboard.next') }}</h2>
       <router-link v-if="next" :to="{ name: 'ScheduleDetail', params: { id: next.id } }"
-        class="block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+        class="page-card block overflow-hidden border-slate-200 bg-white shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
         <div class="flex">
           <span class="w-2 shrink-0" :style="{ backgroundColor: next.schedule_type?.color || '#94a3b8' }"></span>
-          <div class="flex-1 space-y-2 p-5">
+          <div class="flex-1 space-y-2 py-5 pl-2 pr-4 sm:p-5">
             <div class="flex items-start justify-between gap-3">
               <p class="text-lg font-bold text-slate-900 dark:text-white">{{ next.schedule_type?.name ?? t('calendar.scheduledEvent') }}</p>
               <StatusBadge :status="next.status" />
@@ -152,7 +152,7 @@ const authStore = useAuthStore()
 const badges = useBadgesStore()
 const connection = useConnectionStore()
 
-const card = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900'
+const card = 'page-card border-slate-200 bg-white px-4 py-5 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900'
 const sectionTitle = 'text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400'
 const link = 'text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400'
 const action = 'flex flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center text-xs font-semibold shadow-sm transition sm:flex-row sm:text-sm'

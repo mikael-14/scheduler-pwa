@@ -7,7 +7,7 @@
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="rounded-2xl bg-white px-4 py-8 shadow-xl dark:bg-slate-800 sm:px-10">
+      <div class="page-card border-slate-200 bg-white px-4 py-8 shadow-xl dark:border-slate-700 dark:bg-slate-800 sm:px-10">
         <div class="space-y-6 text-center">
           <p class="text-slate-600 dark:text-slate-300">{{ t('connection.body') }}</p>
           <p v-if="errorMessage" class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>

@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-3xl space-y-4 p-6">
+  <div class="mx-auto max-w-3xl space-y-4 py-6 sm:p-6">
     <div class="flex items-center justify-between">
       <div>
         <h2 class="text-xl font-semibold">{{ t('approvals.title') }}</h2>
@@ -14,13 +14,13 @@
     <p v-if="loading && total === 0" class="text-sm text-slate-500">{{ t('approvals.loading') }}</p>
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
     <p v-else-if="total === 0"
-      class="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700">
+      class="page-card border-dashed border-slate-300 px-4 py-8 text-center sm:p-8 text-sm text-slate-500 dark:border-slate-700">
       {{ t('approvals.empty') }}
     </p>
 
     <ul v-if="items.length" class="space-y-3">
       <li v-for="item in items" :key="item.id"
-        class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        class="page-card border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div class="flex items-start gap-3">
           <!-- the owner's photo, with the type's colour on its corner -->
           <span class="relative shrink-0">
@@ -71,7 +71,7 @@
       <h3 class="pt-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('approvals.participationsTitle') }}</h3>
       <ul class="space-y-3">
         <li v-for="item in participations" :key="`${item.schedule_id}-${item.user?.id}`"
-          class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          class="page-card border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div class="flex items-start gap-3">
             <!-- the photo of who wants to join, with the type's colour on its corner -->
             <span class="relative shrink-0">

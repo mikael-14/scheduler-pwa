@@ -1,6 +1,6 @@
 <template>
   <div v-if="variant" role="status"
-    class="mb-6 flex flex-col gap-3 rounded-2xl border border-primary-200 bg-primary-50 p-4 text-sm dark:border-primary-500/30 dark:bg-primary-500/10 sm:flex-row sm:items-center">
+    class="page-card mb-6 flex flex-col gap-3 border-primary-200 bg-primary-50 p-4 text-sm dark:border-primary-500/30 dark:bg-primary-500/10 sm:flex-row sm:items-center">
     <BellAlertIcon class="hidden h-6 w-6 shrink-0 text-primary-600 dark:text-primary-400 sm:block" />
     <p class="flex-1 text-slate-700 dark:text-slate-200">
       {{ variant === 'ask' ? t('push.askBody') : t('push.blockedBody') }}

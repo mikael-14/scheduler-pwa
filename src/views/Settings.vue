@@ -9,8 +9,8 @@
       <InstallButton />
 
       <!-- Sync Section -->
-      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="p-6">
+      <div class="page-card border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="px-4 py-6 sm:p-6">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-400">
               <CloudArrowUpIcon class="h-6 w-6" />
@@ -52,8 +52,8 @@
 
       <!-- Notification preferences: stored on the user, shared with the admin panel -->
       <fieldset :disabled="connection.status === 'offline'" class="min-w-0 disabled:opacity-60">
-      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="p-6">
+      <div class="page-card border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="px-4 py-6 sm:p-6">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
               <BellIcon class="h-6 w-6" />

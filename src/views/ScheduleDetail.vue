@@ -6,14 +6,14 @@
     </button>
 
     <p v-if="loading" class="text-sm text-slate-500">{{ t('schedule.loading') }}</p>
-    <p v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+    <p v-else-if="error" class="page-card border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
       {{ error }}
     </p>
 
     <article v-else-if="schedule"
-      class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      class="page-card overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div class="h-2" :style="{ backgroundColor: schedule.schedule_type?.color || '#94a3b8' }"></div>
-      <div class="space-y-5 p-6">
+      <div class="space-y-5 px-4 py-6 sm:p-6">
         <p v-if="schedule.offline" class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
           {{ t('offline.scheduleSaved') }}
         </p>

@@ -6,7 +6,7 @@
       <router-link to="/login" class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ t('register.signInInstead') }}</router-link>
     </template>
 
-    <div class="mt-8 rounded-2xl bg-white p-8 shadow-sm dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+    <div class="page-card mt-8 border-slate-200 bg-white px-4 py-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
         <form class="space-y-6" @submit.prevent="handleRegister">
           <div>
             <label for="full-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('register.fullName') }}</label>

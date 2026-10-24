@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-3xl space-y-4 p-6">
+  <div class="mx-auto max-w-3xl space-y-4 py-6 sm:p-6">
     <div class="flex items-center justify-between gap-3">
       <h2 class="text-xl font-semibold">{{ t('notifications.title') }}</h2>
       <button v-if="unread > 0 && !offline" @click="markAll"
@@ -19,20 +19,20 @@
       </button>
     </div>
 
-    <p v-if="offline" class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+    <p v-if="offline" class="page-card border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
       {{ t('offline.notificationsSaved') }}
     </p>
 
     <p v-if="loading" class="text-sm text-slate-500">{{ t('notifications.loading') }}</p>
     <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-    <p v-else-if="visible.length === 0" class="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700">
+    <p v-else-if="visible.length === 0" class="page-card border-dashed border-slate-300 px-4 py-8 text-center sm:p-8 text-sm text-slate-500 dark:border-slate-700">
       {{ filter === 'unread' ? t('notifications.noneUnread') : t('notifications.empty') }}
     </p>
 
     <ul v-else class="space-y-2">
       <li v-for="item in visible" :key="item.id">
         <button type="button" @click="open(item)"
-          :class="['flex w-full items-start gap-3 rounded-2xl border p-4 text-left shadow-sm transition',
+          :class="['page-card flex w-full items-start gap-3 p-4 text-left shadow-sm transition',
             item.read_at
               ? 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800'
               : 'border-primary-200 bg-primary-50/60 hover:bg-primary-50 dark:border-primary-500/30 dark:bg-primary-500/10 dark:hover:bg-primary-500/15']">

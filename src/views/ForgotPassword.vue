@@ -3,7 +3,7 @@
     <template #heading>{{ t('forgot.title') }}</template>
     <template #subheading>{{ t('forgot.subtitle') }}</template>
 
-    <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="page-card mt-8 border-slate-200 bg-white px-4 py-8 shadow-sm sm:p-8 dark:border-slate-800 dark:bg-slate-900">
       <!-- the same answer whether or not the email has an account -->
       <div v-if="sentMessage" class="space-y-6 text-center">
         <EnvelopeIcon class="mx-auto h-12 w-12 text-primary-600" />
