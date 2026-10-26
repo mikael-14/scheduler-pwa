@@ -63,7 +63,7 @@ export const authApi = {
     return keepUser(response.data.user, language);
   },
 
-  /** jpg, png or webp up to 2 MB; replaces the previous photo. */
+  /** jpg, png or webp up to 10 MB (stored shrunk to avatar size); replaces the previous photo. */
   async uploadAvatar(file: File): Promise<User> {
     const body = new FormData();
     body.append('avatar', file);

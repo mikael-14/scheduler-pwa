@@ -34,7 +34,7 @@
       <header v-if="authStore.isAuthenticated() && authStore.isApproved()"
         class="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900 ">
         <button @click="isMobileMenuOpen = true" class="text-slate-500 dark:text-slate-400">
-          <Bars3Icon class="h-6 w-6" />
+          <Bars3Icon class="h-8 w-8" />
         </button>
         <router-link to="/"
           class="text-lg font-bold text-primary-600 dark:text-primary-500 lg:hidden">Scheduler</router-link>
@@ -114,28 +114,28 @@
       <!-- Mobile Bottom Navigation (Optional but often better for PWAs) -->
       <nav v-if="authStore.isAuthenticated() && authStore.isApproved()"
         class="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white px-2 dark:border-slate-800 dark:bg-slate-900 lg:hidden">
-        <router-link to="/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
-          active-class="text-primary-600 dark:text-primary-500">
+        <router-link to="/" class="flex flex-col items-center gap-1"
+          :class="isActive('/') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
           <HomeIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">{{ t('nav.home') }}</span>
         </router-link>
-        <router-link to="/my-agenda/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
-          active-class="text-primary-600 dark:text-primary-500">
+        <router-link to="/my-agenda/" class="flex flex-col items-center gap-1"
+          :class="isActive('/my-agenda/') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
           <CalendarIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">{{ t('nav.myAgenda') }}</span>
         </router-link>
-        <router-link to="/agenda/" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
-          active-class="text-primary-600 dark:text-primary-500">
+        <router-link to="/agenda/" class="flex flex-col items-center gap-1"
+          :class="isActive('/agenda/') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
           <CalendarDaysIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">{{ t('nav.agenda') }}</span>
         </router-link>
-        <router-link to="/notifications" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
-          active-class="text-primary-600 dark:text-primary-500">
+        <router-link to="/notifications" class="flex flex-col items-center gap-1"
+          :class="isActive('/notifications') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
           <span class="relative"><BellIcon class="h-6 w-6" /><span v-if="badges.unreadNotifications" class="absolute -right-1.5 -top-1 min-w-[1rem] rounded-full bg-red-500 px-1 text-center text-[10px] font-semibold leading-4 text-white">{{ badges.unreadNotifications > 9 ? '9+' : badges.unreadNotifications }}</span></span>
           <span class="text-[10px] font-medium">{{ t('nav.notifications') }}</span>
         </router-link>
-        <router-link to="/settings" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400"
-          active-class="text-primary-600 dark:text-primary-500">
+        <router-link to="/settings" class="flex flex-col items-center gap-1"
+          :class="isActive('/settings') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
           <Cog6ToothIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">{{ t('nav.settings') }}</span>
         </router-link>
@@ -193,6 +193,9 @@ navigator.serviceWorker?.addEventListener('message', (event) => {
 const toastStore = useToastStore()
 const user = computed(() => authStore.user)
 const router = useRouter()
+const route = useRoute()
+// same rule as the side menu (NavItem): home only on itself, other pages on their whole section
+const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.startsWith(to))
 const isMobileMenuOpen = ref(false)
 // a new page closes the phone menu, however it was reached (its backdrop would cover the page)
 router.afterEach(() => (isMobileMenuOpen.value = false))

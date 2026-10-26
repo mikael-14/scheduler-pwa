@@ -7,6 +7,15 @@
 
     <OfflineNotice />
 
+    <!-- sign out of this device: on phones the side menu holding it is hidden behind the hamburger -->
+    <div class="flex justify-center border-t border-slate-200 pt-8 dark:border-slate-800 sm:justify-end">
+      <button type="button" @click="authStore.logout(router)" :disabled="authStore.loggingOut"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950 sm:w-auto">
+        <ArrowPathIcon v-if="authStore.loggingOut" class="h-4 w-4 animate-spin" />
+        <ArrowRightOnRectangleIcon v-else class="h-4 w-4" />
+        {{ t('nav.logout') }}
+      </button>
+    </div>
     <!-- every change here needs the server: nothing can be pressed offline -->
     <fieldset :disabled="connection.status === 'offline'" class="min-w-0 space-y-8 disabled:opacity-60">
     <!-- Personal information -->
@@ -175,7 +184,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ArrowPathIcon, CameraIcon, DevicePhoneMobileIcon } from '@heroicons/vue/24/outline'
+import { useRouter } from 'vue-router'
+import { ArrowPathIcon, ArrowRightOnRectangleIcon, CameraIcon, DevicePhoneMobileIcon } from '@heroicons/vue/24/outline'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
 import { useDialogStore } from '../stores/dialog'
@@ -190,7 +200,7 @@ const PROVIDERS = [
   { id: 'google', label: 'Google' },
   { id: 'facebook', label: 'Facebook' },
 ]
-const AVATAR_MAX_BYTES = 2 * 1024 * 1024
+const AVATAR_MAX_BYTES = 10 * 1024 * 1024
 const AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 const cardClass = 'page-card border-slate-200 bg-white px-4 py-6 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900'
@@ -201,6 +211,7 @@ const authStore = useAuthStore()
 const toast = useToastStore()
 const dialog = useDialogStore()
 const connection = useConnectionStore()
+const router = useRouter()
 const user = computed(() => authStore.user)
 // the API says whether there is one; older cached users count as having one
 const hasPassword = computed(() => user.value?.has_password !== false)
