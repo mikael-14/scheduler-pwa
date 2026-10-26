@@ -167,11 +167,9 @@ const headingZone = CALENDAR_TIMEZONE
 const store = useSchedulesStore()
 const calendarRef = ref<any>(null)
 
-// Where the user was (view and date), kept on the device for when they come back, also after
-// closing the app. Agenda and My agenda each keep their own. Storage can be missing (private
-// mode): then it just starts fresh.
-const VIEWS = ['dayGridMonth', 'monthDots', 'timeGridWeek', 'weekPlanner', 'timeGridDay', 'listWeek']
-const storageKey = `calendar.${props.mine ? 'mine' : 'all'}`
+// Coming back always opens the planner on this week: nothing of the last visit is kept
+// (landing on an old week, or a view chosen long ago, was confusing)
+const initialView = 'weekPlanner'
 
 // The view buttons, in the order of the phone's 3 × 2 grid
 const VIEW_BUTTONS = [
@@ -186,27 +184,6 @@ const VIEW_BUTTONS = [
 // The compact views (see compactViewsPlugin) show the same period as these: same header labels
 const SAME_PERIOD: Record<string, string> = { monthDots: 'dayGridMonth', weekPlanner: 'timeGridWeek' }
 const baseView = (view: string) => SAME_PERIOD[view] ?? view
-
-function readStored(key: string): string | null {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-function writeStored(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value)
-  } catch {
-    // not saved: nothing else depends on it
-  }
-}
-
-const savedView = readStored(`${storageKey}.view`)
-const initialView = savedView && VIEWS.includes(savedView) ? savedView : 'listWeek'
-const savedDate = readStored(`${storageKey}.date`)
-const initialDate = savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate) ? savedDate : undefined
 
 const currentDate = ref(new Date())
 const currentView = ref(initialView)
@@ -252,9 +229,6 @@ const handleDatesSet = (info: any) => {
   rangeStart.value = info.startStr.slice(0, 10)
   currentDate.value = info.view.currentStart
   currentView.value = info.view.type
-  writeStored(`${storageKey}.view`, info.view.type)
-  // with a named timezone FullCalendar's dates are UTC-coerced: the UTC date is the calendar's date
-  writeStored(`${storageKey}.date`, info.view.currentStart.toISOString().slice(0, 10))
 }
 
 // The compact views, made for phones: the week as tweek.so (WeekPlanner: the days one under the other, each with
@@ -294,7 +268,6 @@ const calendarOptions = computed(() => ({
   locales: [ptLocale],
   locale: locale.value,
   initialView,
-  ...(initialDate ? { initialDate } : {}),
   events: fetchEventsForRange,
   headerToolbar: false as const, // Disables original buttons since you built beautiful custom ones
   allDaySlot: true,

@@ -101,11 +101,16 @@
             <XMarkIcon class="h-3.5 w-3.5" />
           </button>
         </div>
-        <input v-model="peopleSearch" type="search" :placeholder="t('schedule.searchPeople')" :class="inputClass" />
-        <ul v-if="peopleSearch"
+        <!-- the list opens on tap, before typing; the search only narrows it. Picking someone, or
+          leaving the field, closes it. After Esc the field keeps focus: a tap or typing reopens it -->
+        <input ref="peopleInput" v-model="peopleSearch" type="search" :placeholder="t('schedule.searchPeople')" :class="inputClass"
+          @focus="peopleOpen = true" @click="peopleOpen = true" @input="peopleOpen = true"
+          @blur="closePeople" @keydown.esc="closePeople" />
+        <ul v-if="peopleOpen"
           class="mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700">
           <li v-for="person in matchingPeople" :key="person.id">
-            <button type="button" @click="toggleParticipant(person.id); peopleSearch = ''"
+            <!-- mousedown.prevent: the field's blur would close the list before the click lands -->
+            <button type="button" @mousedown.prevent @click="addParticipant(person.id)"
               class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800">
               <UserAvatar :name="person.name" :src="person.avatar_url" />
               <span class="min-w-0 truncate">{{ person.name }}</span>
@@ -193,6 +198,8 @@ const loadError = ref<string | null>(null)
 const saving = ref(false)
 const errors = ref<Record<string, string[]>>({})
 const peopleSearch = ref('')
+const peopleOpen = ref(false)
+const peopleInput = ref<HTMLInputElement | null>(null)
 
 const form = reactive({
   schedule_type_id: null as number | null,
@@ -240,13 +247,25 @@ const matchingPeople = computed(() => {
   return (options.value?.people ?? [])
     .filter((person) => !form.participants.includes(person.id) && person.id !== ownerId.value)
     .filter((person) => person.name.toLowerCase().includes(search))
-    .slice(0, 20)
+    .slice(0, 50)
 })
 
 const toggleParticipant = (id: number) => {
   form.participants = form.participants.includes(id)
     ? form.participants.filter((participant) => participant !== id)
     : [...form.participants, id]
+}
+
+const closePeople = () => {
+  peopleOpen.value = false
+  peopleSearch.value = ''
+}
+
+/** A pick closes the list and leaves the field (the phone keyboard goes away); a tap reopens it. */
+const addParticipant = (id: number) => {
+  toggleParticipant(id)
+  peopleInput.value?.blur()
+  closePeople()
 }
 
 /** Switching all day on/off keeps the chosen days. */
