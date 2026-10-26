@@ -8,7 +8,7 @@
         <div class="flex h-16 items-center border-b border-slate-200 px-6 dark:border-slate-800">
           <router-link to="/" class="flex items-center gap-2 font-bold text-primary-600 dark:text-primary-500">
             <img src="/img/icons/icon-192x192.png" alt="" class="h-8 w-8 rounded-lg" />
-            <span>Scheduler</span>
+            <span>{{ t('app.name') }}</span>
           </router-link>
         </div>
         <nav class="flex-1 overflow-y-auto p-4 space-y-1">
@@ -37,7 +37,7 @@
           <Bars3Icon class="h-8 w-8" />
         </button>
         <router-link to="/"
-          class="text-lg font-bold text-primary-600 dark:text-primary-500 lg:hidden">Scheduler</router-link>
+          class="text-lg font-bold text-primary-600 dark:text-primary-500 lg:hidden">{{ t('app.name') }}</router-link>
         <div class="flex items-center gap-2">
           <ConnectionStatus />
           <div
@@ -76,7 +76,7 @@
             <router-link to="/" class="flex items-center gap-2 font-bold text-primary-600 dark:text-primary-500"
               @click="isMobileMenuOpen = false">
               <img src="/img/icons/icon-192x192.png" alt="" class="h-7 w-7 rounded-lg" />
-              <span>Scheduler</span>
+              <span>{{ t('app.name') }}</span>
             </router-link>
             <button @click="isMobileMenuOpen = false" class="text-slate-500">
               <XMarkIcon class="h-6 w-6" />
@@ -239,6 +239,9 @@ const toggleDarkMode = () => {
   }
   document.documentElement.classList.toggle('dark', isDark.value)
 }
+
+// the browser tab follows the language too (index.html only has the English name)
+watch(locale, () => (document.title = t('app.name')), { immediate: true })
 
 watch(isDark, (val) => {
   document.documentElement.classList.toggle('dark', val)

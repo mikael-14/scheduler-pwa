@@ -5,6 +5,7 @@ export const SUPPORTED_LOCALES: Locale[] = ['pt', 'en']
 // Portuguese is the default language of the app; English mirrors every key.
 export const messages: Record<Locale, Record<string, string>> = {
   pt: {
+    'app.name': 'Agenda',
     // navigation
     'nav.home': 'Início',
     'nav.myAgenda': 'Minha agenda',
@@ -355,6 +356,7 @@ export const messages: Record<Locale, Record<string, string>> = {
   },
 
   en: {
+    'app.name': 'Scheduler',
     'nav.home': 'Home',
     'nav.myAgenda': 'My Agenda',
     'nav.agenda': 'Agenda',
