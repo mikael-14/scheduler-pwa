@@ -13,6 +13,8 @@ export interface ScheduleParticipant {
   description?: string | null;
   /** approvers, pending participants: why they cannot be approved yet (null = they can) */
   approval_problem?: string | null;
+  /** the schedule's owner (or an admin), once it started: this person did not come */
+  can_mark_not_shown?: boolean;
 }
 
 /** A schedule as the API returns it (see ScheduleTransformer). */
@@ -32,7 +34,10 @@ export interface Schedule {
   schedule_users: ScheduleParticipant[];
   /** what the signed-in user may do with it */
   can: {
-    update: boolean; cancel: boolean; delete: boolean; approve: boolean;
+    /** cancel: its creator, before it starts (there is no delete outside the admin panel) */
+    update: boolean; cancel: boolean; approve: boolean;
+    /** admins, once it started: its owner did not come */
+    not_shown?: boolean;
     /** join / leave someone else's schedule */
     join?: boolean; leave?: boolean;
     /** decide on pending participants (people who joined) */
@@ -204,7 +209,7 @@ export const schedulesApi = {
     return response.data.data || response.data;
   },
 
-  /** Owners cancel instead of deleting once a schedule is approved. */
+  /** Its creator cancels it (pending or approved) before it starts; schedules are never deleted here. */
   async cancelSchedule(id: number | string, panel = 'admin'): Promise<Schedule> {
     return this.updateSchedule(id, { status: 'cancelled' }, panel);
   },
@@ -248,8 +253,17 @@ export const schedulesApi = {
     syncOfflineData();
   },
 
-  async deleteSchedule(id: number | string, panel = 'admin') {
-    await axiosInstance.delete(`/${panel}/schedules/${id}`);
+  /** Admins, once it started: its owner did not come. The optional message goes to the internal note. */
+  async markNotShown(id: number | string, message?: string, panel = 'admin'): Promise<Schedule> {
+    const response = await axiosInstance.post(`/${panel}/schedules/${id}/not-shown`, message ? { message } : {});
     syncOfflineData();
-  }
+    return response.data.data;
+  },
+
+  /** The schedule's owner, once it started: one of its participants did not come. */
+  async markParticipantNotShown(id: number | string, userId: number, panel = 'admin'): Promise<Schedule> {
+    const response = await axiosInstance.post(`/${panel}/schedules/${id}/participants/${userId}/not-shown`);
+    syncOfflineData();
+    return response.data.data;
+  },
 };

@@ -43,6 +43,12 @@
                 <UserAvatar :name="participant.name ?? '?'" :src="participant.avatar_url" size="h-5 w-5" />
                 {{ participant.name ?? '?' }}
                 <StatusBadge v-if="participant.status" :status="participant.status" compact />
+                <!-- the owner, once it started: this person did not come -->
+                <button v-if="participant.can_mark_not_shown && online" type="button" @click="participantNotShown(participant)"
+                  :aria-label="t('schedule.markNotShownFor', { name: participant.name ?? '?' })" :title="t('schedule.markNotShown')"
+                  class="-mr-1 rounded-full p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 dark:hover:bg-slate-700 dark:hover:text-white">
+                  <EyeSlashIcon class="h-3.5 w-3.5" />
+                </button>
               </span>
               <span v-if="!schedule.schedule_users.length" class="text-sm text-slate-500">—</span>
             </dd>
@@ -90,11 +96,11 @@
 
         <!-- only the actions the API says this user may do -->
         <div v-if="hasActions" class="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-5 dark:border-slate-800">
-          <button v-if="schedule.can.delete" type="button" @click="remove"
-            class="rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
-            {{ t('schedule.delete') }}
+          <button v-if="schedule.can.not_shown" type="button" @click="notShown"
+            class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+            {{ t('schedule.markNotShown') }}
           </button>
-          <button v-if="schedule.can.cancel && !schedule.can.delete" type="button" @click="cancel"
+          <button v-if="schedule.can.cancel" type="button" @click="cancel"
             class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
             {{ t('schedule.cancelSchedule') }}
           </button>
@@ -130,7 +136,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ChevronLeftIcon } from '@heroicons/vue/20/solid'
+import { ChevronLeftIcon, EyeSlashIcon } from '@heroicons/vue/20/solid'
 import { t } from '../i18n'
 import { schedulesApi, type Schedule, type ScheduleParticipant } from '../api/schedules'
 import { apiErrorMessage, isNetworkError } from '../utils/apiError'
@@ -160,7 +166,7 @@ const period = computed(() => schedule.value
 const hasActions = computed(() => {
   const can = schedule.value?.can
   if (!can || !online.value) return false
-  return can.update || can.cancel || can.delete || can.approve || can.join || can.leave
+  return can.update || can.cancel || can.not_shown || can.approve || can.join || can.leave
 })
 const online = computed(() => !schedule.value?.offline && connection.status !== 'offline')
 // approvers: pending participants of a decided schedule (on a pending one they follow its decision)
@@ -200,16 +206,41 @@ const cancel = () => dialog.confirm({
   },
 })
 
-const remove = () => dialog.confirm({
-  title: t('schedule.deleteTitle'),
-  message: t('schedule.deleteBody'),
-  tone: 'danger',
-  confirmLabel: t('schedule.delete'),
+/** Admins, once it started: the owner did not come. Optional message, as when deciding. */
+const notShown = () => {
+  const current = schedule.value!
+
+  dialog.prompt({
+    title: t('schedule.notShownTitle'),
+    message: `${current.user?.name ?? ''} · ${current.schedule_type?.name ?? ''} · ${period.value}`,
+    tone: 'warning',
+    confirmLabel: t('schedule.markNotShown'),
+    cancelLabel: t('approvals.cancel'),
+    field: { label: t('approvals.message'), help: t('approvals.messageHelp'), maxLength: 1000, rows: 3 },
+    onConfirm: async (text) => {
+      try {
+        schedule.value = await schedulesApi.markNotShown(current.id, text)
+        toast.success(t('schedule.markedNotShown'))
+      } catch (e) {
+        toast.error(apiErrorMessage(e, t('schedule.saveFailed')))
+        if (isNetworkError(e)) throw e
+        await load()
+      }
+    },
+  })
+}
+
+/** The owner, once it started: one of the participants did not come. */
+const participantNotShown = (participant: ScheduleParticipant) => dialog.confirm({
+  title: t('schedule.participantNotShownTitle', { name: participant.name ?? '?' }),
+  message: `${schedule.value?.schedule_type?.name ?? ''} · ${period.value}`,
+  tone: 'warning',
+  confirmLabel: t('schedule.markNotShown'),
+  cancelLabel: t('approvals.cancel'),
   onConfirm: async () => {
     try {
-      await schedulesApi.deleteSchedule(schedule.value!.id)
-      toast.success(t('schedule.deleted'))
-      router.replace({ name: 'My Agenda' })
+      schedule.value = await schedulesApi.markParticipantNotShown(schedule.value!.id, participant.user_id)
+      toast.success(t('schedule.markedNotShown'))
     } catch (e) {
       toast.error(apiErrorMessage(e, t('schedule.saveFailed')))
       if (isNetworkError(e)) throw e

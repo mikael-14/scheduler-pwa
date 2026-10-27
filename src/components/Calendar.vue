@@ -271,6 +271,8 @@ const calendarOptions = computed(() => ({
   events: fetchEventsForRange,
   headerToolbar: false as const, // Disables original buttons since you built beautiful custom ones
   allDaySlot: true,
+  // the week/day row and the list's label for schedules without hours, as the rest of the app
+  allDayText: t('schedule.allDay'),
   slotDuration: '00:30:00',
   expandRows: true,
   height: 'auto',

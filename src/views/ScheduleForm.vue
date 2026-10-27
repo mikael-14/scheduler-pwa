@@ -128,16 +128,9 @@
         <FieldError :errors="errors.description" />
       </label>
 
-      <!-- Staff only -->
+      <!-- Staff only. No status here: a new schedule is pending; it is approved / rejected,
+        cancelled or marked as not shown from its page, and completed by the server -->
       <template v-if="options.can.internal_note">
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-          {{ t('schedule.status') }}
-          <select v-model="form.status" :class="inputClass">
-            <option v-for="status in statusChoices" :key="status.value" :value="status.value">{{ status.label }}
-            </option>
-          </select>
-          <FieldError :errors="errors.status" />
-        </label>
         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
           {{ t('schedule.internalNote') }}
           <textarea v-model="form.internal_note" rows="2" maxlength="255" :class="inputClass"></textarea>
@@ -146,7 +139,7 @@
         </label>
       </template>
 
-      <p v-if="!isEdit && !options.can.internal_note" class="text-xs text-slate-500 dark:text-slate-400">
+      <p v-if="!isEdit" class="text-xs text-slate-500 dark:text-slate-400">
         {{ t('schedule.needsApproval') }}
       </p>
 
@@ -172,7 +165,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ChevronLeftIcon, XMarkIcon } from '@heroicons/vue/20/solid'
 import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 import { t } from '../i18n'
-import { schedulesApi, type ScheduleFormOptions, type ScheduleInput, type ScheduleStatus } from '../api/schedules'
+import { schedulesApi, type ScheduleFormOptions, type ScheduleInput } from '../api/schedules'
 import { apiErrorMessage } from '../utils/apiError'
 import { toApiDateTime, toInputDate, toInputDateTime } from '../utils/datetime'
 import { defaultStartTime, inputLimits, rulesSummary } from '../utils/scheduleRules'
@@ -208,12 +201,9 @@ const form = reactive({
   all_day: false,
   description: '',
   internal_note: '',
-  status: 'pending' as ScheduleStatus,
   user_id: null as number | null,
   participants: [] as number[],
 })
-// the status the schedule had when it was opened (always offered back)
-const originalStatus = ref<{ value: ScheduleStatus; label: string } | null>(null)
 
 const inputClass = 'mt-1 block w-full rounded-lg border border-slate-300 bg-white p-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white'
 
@@ -230,14 +220,6 @@ const typeRules = computed(() => rulesSummary(type.value))
 
 /** The browser pickers stop at the type's dates, and at today without the "past dates" permission. */
 const limits = computed(() => inputLimits(type.value, form.all_day, !!options.value?.can.past_dates))
-
-const statusChoices = computed(() => {
-  const choices = [...(options.value?.statuses ?? [])]
-  if (originalStatus.value && !choices.some((choice) => choice.value === originalStatus.value!.value)) {
-    choices.push(originalStatus.value)
-  }
-  return choices
-})
 
 const ownerId = computed(() => form.user_id)
 const selectedPeople = computed(() =>
@@ -326,10 +308,8 @@ async function load() {
       form.end = schedule.all_day ? toInputDate(schedule.end) : toInputDateTime(schedule.end)
       form.description = schedule.description ?? ''
       form.internal_note = schedule.internal_note ?? ''
-      form.status = schedule.status
       form.user_id = formOptions.can.book_for_others ? schedule.user_id : null
       form.participants = schedule.schedule_users.map((participant) => participant.user_id)
-      originalStatus.value = { value: schedule.status, label: t(`status.${schedule.status}`) }
     } else {
       // a link can pick the type (e.g. a "nobody yet for Walks" alert), if it is still active
       const wanted = Number(route.query.type)
@@ -354,10 +334,7 @@ function payload(): ScheduleInput {
     schedule_users: form.participants.filter((id) => id !== form.user_id).map((user_id) => ({ user_id })),
   }
   if (options.value?.can.book_for_others) input.user_id = form.user_id
-  if (options.value?.can.internal_note) {
-    input.internal_note = form.internal_note.trim() || null
-    input.status = form.status
-  }
+  if (options.value?.can.internal_note) input.internal_note = form.internal_note.trim() || null
   return input
 }
 

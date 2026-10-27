@@ -53,21 +53,11 @@ export const useSchedulesStore = defineStore('schedules', () => {
     }
   }
 
-  async function deleteEvent(id: number | string, panel = 'admin') {
-    try {
-      await schedulesApi.deleteSchedule(id, panel)
-      events.value = events.value.filter(e => e.id !== id)
-    } catch (err) {
-      console.error('Failed to delete event', err)
-      throw err
-    }
-  }
-
   function clearEvents() {
     events.value = []
     error.value = null
     loading.value = false
   }
 
-  return { events, loading, error, offline, offlineComplete, fetchEvents, addEvent, updateEvent, deleteEvent, clearEvents }
+  return { events, loading, error, offline, offlineComplete, fetchEvents, addEvent, updateEvent, clearEvents }
 })
