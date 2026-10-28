@@ -23,6 +23,7 @@
           <!-- phones: the period here, beside the arrows (wider: in the row below) -->
           <p class="min-w-0 truncate text-sm font-bold text-slate-900 dark:text-white sm:hidden">{{ dateHeading }}</p>
           <div class="flex shrink-0 items-center gap-2">
+            <CalendarFilters v-model="filters" :options="filterOptions" />
             <button @click="goPrev" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:h-10 sm:w-10">
               <ChevronLeftIcon class="h-5 w-5" />
             </button>
@@ -127,6 +128,7 @@ import {
   XMarkIcon
 } from '@heroicons/vue/20/solid'
 import WeekPlanner from './WeekPlanner.vue'
+import CalendarFilters from './CalendarFilters.vue'
 import MonthDots from './MonthDots.vue'
 import type { DayEvent } from '../utils/calendarDays'
 import ptLocale from '@fullcalendar/core/locales/pt'
@@ -140,11 +142,9 @@ import { useAuthStore } from '../stores/auth'
 import { useConnectionStore } from '../stores/connection'
 import { SignalSlashIcon } from '@heroicons/vue/24/outline'
 import { CALENDAR_TIMEZONE, dateToInput } from '../utils/datetime'
-import { loadCalendarHours, savedCalendarHours, type CalendarHours } from '../utils/scheduleRules'
+import { loadCalendarOptions, savedCalendarHours, savedCalendarFilterOptions, NO_FILTER_OPTIONS, type CalendarHours, type CalendarFilterOptions } from '../utils/scheduleRules'
+import { saveCalendarFilters, savedCalendarFilters, withKnownChoices, type CalendarFilters as Filters } from '../utils/calendarFilters'
 import type { Schedule } from '../api/schedules'
-
-/** `mine`: only schedules I own or take part in ("My agenda"). */
-const props = defineProps<{ mine?: boolean }>()
 
 const toast = useToastStore()
 const router = useRouter()
@@ -153,9 +153,23 @@ const connection = useConnectionStore()
 // creating needs the server (its rules, approval): not offline
 const canCreate = computed(() => authStore.can('create_schedule') && connection.status !== 'offline')
 
-// visible hours: the last known at once (also offline), then the current ones
+// the filters are kept on this device (per account) until cleared; the button shows how many are on
+const filters = ref<Filters>(savedCalendarFilters(authStore.user?.id))
+watch(filters, (value) => {
+  saveCalendarFilters(authStore.user?.id, value)
+  calendarRef.value?.getApi().refetchEvents()
+})
+
+// visible hours and the filters' choices: the last known at once (also offline), then the current ones
 const hours = ref<CalendarHours>(savedCalendarHours() ?? { min: null, max: null })
-loadCalendarHours().then((value) => (hours.value = value))
+const filterOptions = ref<CalendarFilterOptions>(savedCalendarFilterOptions() ?? NO_FILTER_OPTIONS)
+loadCalendarOptions().then((value) => {
+  hours.value = value.hours
+  filterOptions.value = value.filters
+  // a type or person removed since the filters were saved: drop it (and reload only then)
+  const known = withKnownChoices(filters.value, value.filters)
+  if (JSON.stringify(known) !== JSON.stringify(filters.value)) filters.value = known
+})
 
 // back online after showing the saved copy: load the real thing
 watch(() => connection.status, (status) => {
@@ -191,7 +205,7 @@ const currentView = ref(initialView)
 // Fetches only the events inside the visible date range.
 // FullCalendar calls this automatically on mount, view change, and prev/next navigation.
 const fetchEventsForRange = async (fetchInfo: any, successCallback: any, failureCallback: any) => {
-  await store.fetchEvents('admin', { start: fetchInfo.startStr, end: fetchInfo.endStr, mine: props.mine })
+  await store.fetchEvents('admin', { start: fetchInfo.startStr, end: fetchInfo.endStr, ...filters.value })
   if (store.error) {
     // FullCalendar shows nothing on failure: tell the user why the calendar is empty
     toast.error(store.error)

@@ -13,8 +13,7 @@
         </div>
         <nav class="flex-1 overflow-y-auto p-4 space-y-1">
           <NavItem to="/" icon="HomeIcon">{{ t('nav.home') }}</NavItem>
-          <NavItem to="/my-agenda/" icon="CalendarIcon">{{ t('nav.myAgenda') }}</NavItem>
-          <NavItem to="/agenda/" icon="CalendarDaysIcon">{{ t('nav.agenda') }}</NavItem>
+          <NavItem to="/calendar" icon="CalendarDaysIcon">{{ t('nav.calendar') }}</NavItem>
           <NavItem v-if="authStore.canApprove()" to="/approvals" icon="CheckBadgeIcon" :badge="badges.pendingApprovals">{{ t('nav.approvals') }}</NavItem>
           <NavItem to="/notifications" icon="BellIcon" :badge="badges.unreadNotifications">{{ t('nav.notifications') }}</NavItem>
           <NavItem to="/profile" icon="UserIcon">{{ t('nav.profile') }}</NavItem>
@@ -84,8 +83,7 @@
           </div>
           <div class="space-y-1">
             <NavItem to="/" icon="HomeIcon" @click="isMobileMenuOpen = false">{{ t('nav.home') }}</NavItem>
-            <NavItem to="/my-agenda/" icon="CalendarIcon" @click="isMobileMenuOpen = false">{{ t('nav.myAgenda') }}</NavItem>
-            <NavItem to="/agenda/" icon="CalendarDaysIcon" @click="isMobileMenuOpen = false">{{ t('nav.agenda') }}</NavItem>
+            <NavItem to="/calendar" icon="CalendarDaysIcon" @click="isMobileMenuOpen = false">{{ t('nav.calendar') }}</NavItem>
             <NavItem v-if="authStore.canApprove()" to="/approvals" icon="CheckBadgeIcon" :badge="badges.pendingApprovals" @click="isMobileMenuOpen = false">{{ t('nav.approvals') }}</NavItem>
             <NavItem to="/notifications" icon="BellIcon" :badge="badges.unreadNotifications" @click="isMobileMenuOpen = false">{{ t('nav.notifications') }}</NavItem>
             <NavItem to="/profile" icon="UserIcon" @click="isMobileMenuOpen = false">{{ t('nav.profile') }}</NavItem>
@@ -119,15 +117,21 @@
           <HomeIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">{{ t('nav.home') }}</span>
         </router-link>
-        <router-link to="/my-agenda/" class="flex flex-col items-center gap-1"
-          :class="isActive('/my-agenda/') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
-          <CalendarIcon class="h-6 w-6" />
-          <span class="text-[10px] font-medium">{{ t('nav.myAgenda') }}</span>
-        </router-link>
-        <router-link to="/agenda/" class="flex flex-col items-center gap-1"
-          :class="isActive('/agenda/') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
+        <router-link to="/calendar" class="flex flex-col items-center gap-1"
+          :class="isActive('/calendar') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
           <CalendarDaysIcon class="h-6 w-6" />
-          <span class="text-[10px] font-medium">{{ t('nav.agenda') }}</span>
+          <span class="text-[10px] font-medium">{{ t('nav.calendar') }}</span>
+        </router-link>
+        <!-- approvers: their approvals (with what is waiting); everyone else: their profile -->
+        <router-link v-if="authStore.canApprove()" to="/approvals" class="flex flex-col items-center gap-1"
+          :class="isActive('/approvals') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
+          <span class="relative"><CheckBadgeIcon class="h-6 w-6" /><span v-if="badges.pendingApprovals" class="absolute -right-1.5 -top-1 min-w-[1rem] rounded-full bg-red-500 px-1 text-center text-[10px] font-semibold leading-4 text-white">{{ badges.pendingApprovals > 9 ? '9+' : badges.pendingApprovals }}</span></span>
+          <span class="text-[10px] font-medium">{{ t('nav.approvals') }}</span>
+        </router-link>
+        <router-link v-else to="/profile" class="flex flex-col items-center gap-1"
+          :class="isActive('/profile') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
+          <UserIcon class="h-6 w-6" />
+          <span class="text-[10px] font-medium">{{ t('nav.profile') }}</span>
         </router-link>
         <router-link to="/notifications" class="flex flex-col items-center gap-1"
           :class="isActive('/notifications') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
@@ -156,8 +160,9 @@ import { useDark, useIntervalFn } from '@vueuse/core'
 import { useBadgesStore } from './stores/badges'
 import {
   HomeIcon,
-  CalendarIcon,
   CalendarDaysIcon,
+  CheckBadgeIcon,
+  UserIcon,
   BellIcon,
   Cog6ToothIcon,
   Bars3Icon,

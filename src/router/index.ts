@@ -8,8 +8,10 @@ const routes = [
   { path: '/forgot-password', name: 'ForgotPassword', component: () => import('../views/ForgotPassword.vue'), meta: { public: true } },
   // opened from the email; works whoever is signed in on this device (the reset signs everyone out)
   { path: '/reset-password', name: 'ResetPassword', component: () => import('../views/ResetPassword.vue'), meta: { public: true } },
-  { path: '/my-agenda/', name: 'My Agenda', component: () => import('../views/MyAgenda.vue'), meta: { requiresAuth: true } },
-  { path: '/agenda/', name: 'Agenda', component: () => import('../views/Agenda.vue'), props: true, meta: { requiresAuth: true } },
+  { path: '/calendar', name: 'Calendar', component: () => import('../views/CalendarView.vue'), meta: { requiresAuth: true } },
+  // the two calendars of before ("My agenda" is now the "Only mine" filter)
+  { path: '/agenda/', redirect: '/calendar' },
+  { path: '/my-agenda/', redirect: '/calendar' },
   { path: '/schedules/new', name: 'ScheduleNew', component: () => import('../views/ScheduleForm.vue'), meta: { requiresAuth: true } },
   { path: '/schedules/:id', name: 'ScheduleDetail', component: () => import('../views/ScheduleDetail.vue'), meta: { requiresAuth: true } },
   { path: '/schedules/:id/edit', name: 'ScheduleEdit', component: () => import('../views/ScheduleForm.vue'), meta: { requiresAuth: true } },

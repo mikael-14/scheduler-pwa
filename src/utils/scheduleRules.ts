@@ -1,6 +1,6 @@
 import axiosInstance from '../config/axios'
 import { t } from '../i18n'
-import type { ScheduleTypeOption } from '../api/schedules'
+import type { ScheduleStatus, ScheduleTypeOption } from '../api/schedules'
 import { formatServerDateTime, toInputDate, toInputDateTime } from './datetime'
 
 /**
@@ -63,20 +63,48 @@ export function savedCalendarHours(): CalendarHours | null {
 }
 
 /**
- * Hours the agenda shows: from the earliest to the latest of the active types (the admin panel's
- * central calendar uses the same). Falls back to the saved ones, then to the whole day.
+ * What the calendar needs (GET /schedules/calendar-options): the hours it shows, from the earliest
+ * to the latest of the active types (the admin panel's central calendar uses the same), and the
+ * choices of its filters. Falls back to the saved ones, then to the whole day and no choices.
  */
-export async function loadCalendarHours(): Promise<CalendarHours> {
+export async function loadCalendarOptions(): Promise<{ hours: CalendarHours; filters: CalendarFilterOptions }> {
   try {
     const response = await axiosInstance.get('/admin/schedules/calendar-options')
-    const hours: CalendarHours = response.data.data.hours
+    const { hours, filters } = response.data.data as { hours: CalendarHours; filters: CalendarFilterOptions }
     try {
       localStorage.setItem(HOURS_KEY, JSON.stringify(hours))
+      localStorage.setItem(FILTER_OPTIONS_KEY, JSON.stringify(filters))
     } catch {
       /* storage unavailable */
     }
-    return hours
+    return { hours, filters }
   } catch {
-    return savedCalendarHours() ?? { min: null, max: null }
+    return {
+      hours: savedCalendarHours() ?? { min: null, max: null },
+      filters: savedCalendarFilterOptions() ?? NO_FILTER_OPTIONS,
+    }
+  }
+}
+
+// ---- the calendar's filter choices
+
+export interface CalendarFilterOptions {
+  /** every type; `active` false: no new schedules, older ones remain */
+  types: { id: number; name: string; color: string | null; active: boolean }[]
+  /** `everyone` false: only one's own schedules can be seen with it */
+  statuses: { value: ScheduleStatus; label: string; everyone: boolean }[]
+  people: { id: number; name: string; avatar_url?: string | null }[]
+}
+
+const FILTER_OPTIONS_KEY = 'calendarFilterOptions'
+export const NO_FILTER_OPTIONS: CalendarFilterOptions = { types: [], statuses: [], people: [] }
+
+/** Last known filter choices, so the filters work offline too. */
+export function savedCalendarFilterOptions(): CalendarFilterOptions | null {
+  try {
+    const raw = localStorage.getItem(FILTER_OPTIONS_KEY)
+    return raw ? (JSON.parse(raw) as CalendarFilterOptions) : null
+  } catch {
+    return null
   }
 }

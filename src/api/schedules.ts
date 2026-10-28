@@ -142,6 +142,11 @@ export interface ScheduleFilters {
   end?: string;
   /** only schedules I own or take part in */
   mine?: boolean;
+  /** schedule type ids */
+  types?: number[];
+  statuses?: ScheduleStatus[];
+  /** user ids: schedules they own or take part in */
+  people?: number[];
 }
 
 /** A calendar range (FullCalendar's exclusive end) as inclusive "YYYY-MM-DD" days. */
@@ -166,6 +171,9 @@ export const schedulesApi = {
     if (filters.start) params['filter[start_from]'] = filters.start;
     if (filters.end) params['filter[start_to]'] = filters.end;
     if (filters.mine) params['filter[mine]'] = '1';
+    if (filters.types?.length) params['filter[schedule_type_id]'] = filters.types.join(',');
+    if (filters.statuses?.length) params['filter[status]'] = filters.statuses.join(',');
+    if (filters.people?.length) params['filter[person]'] = filters.people.join(',');
 
     try {
       const response = await axiosInstance.get(`/${panel}/schedules`, { params });
@@ -174,7 +182,7 @@ export const schedulesApi = {
       if (!isNetworkError(err)) throw err;
 
       const { from, to } = rangeDays(filters);
-      const saved = await readOfflineSchedules(from, to, !!filters.mine);
+      const saved = await readOfflineSchedules(from, to, filters);
       if (!saved.window) throw err; // nothing was ever saved on this device
       return { data: saved.schedules, offline: true, complete: saved.complete };
     }

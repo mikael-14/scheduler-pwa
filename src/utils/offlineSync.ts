@@ -2,7 +2,7 @@ import { watch } from 'vue'
 import axiosInstance from '../config/axios'
 import { useAuthStore } from '../stores/auth'
 import { useConnectionStore } from '../stores/connection'
-import type { Schedule } from '../api/schedules'
+import type { Schedule, ScheduleFilters } from '../api/schedules'
 import { metaDB, scheduleDB, clearOfflineData } from './db'
 import { toInputDate } from './datetime'
 
@@ -103,16 +103,20 @@ const overlaps = (schedule: Schedule, from: string, to: string) => {
  * The saved schedules for a calendar range ("YYYY-MM-DD" days, inclusive), and whether the
  * range goes beyond what is saved (so the calendar can say so instead of looking empty).
  */
-export async function readOfflineSchedules(from: string, to: string, mine: boolean) {
+export async function readOfflineSchedules(from: string, to: string, filters: ScheduleFilters = {}) {
   const saved = await metaDB.get<OfflineWindow>('window')
   const me = useAuthStore().user?.id
   const all: Schedule[] = await scheduleDB.getAll()
+  // the calendar's filters, as the API applies them
+  const involves = (schedule: Schedule, ids: (number | undefined)[]) => ids.includes(schedule.user_id)
+    || !!schedule.schedule_users?.some((participant) => ids.includes(participant.user_id))
 
   const schedules = all
     .filter((schedule) => overlaps(schedule, from, to))
-    .filter((schedule) => !mine
-      || schedule.user_id === me
-      || schedule.schedule_users?.some((participant) => participant.user_id === me))
+    .filter((schedule) => !filters.mine || involves(schedule, [me]))
+    .filter((schedule) => !filters.types?.length || filters.types.includes(schedule.schedule_type_id))
+    .filter((schedule) => !filters.statuses?.length || filters.statuses.includes(schedule.status))
+    .filter((schedule) => !filters.people?.length || involves(schedule, filters.people))
 
   return { schedules, complete: !!saved && from >= saved.from && to <= saved.to, window: saved ?? null }
 }

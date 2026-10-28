@@ -375,7 +375,7 @@ async function submit() {
   }
 }
 
-const goBack = () => (window.history.length > 1 ? router.back() : router.push({ name: 'My Agenda' }))
+const goBack = () => (window.history.length > 1 ? router.back() : router.push({ name: 'Calendar' }))
 
 onMounted(load)
 </script>

@@ -187,7 +187,7 @@ const load = async () => {
   }
 }
 
-const goBack = () => (window.history.length > 1 ? router.back() : router.push({ name: 'My Agenda' }))
+const goBack = () => (window.history.length > 1 ? router.back() : router.push({ name: 'Calendar' }))
 
 const cancel = () => dialog.confirm({
   title: t('schedule.cancelTitle'),

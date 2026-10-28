@@ -63,12 +63,11 @@
     </section>
 
     <!-- 3. Quick actions -->
-    <nav class="grid grid-cols-3 gap-3">
+    <nav :class="['grid gap-3', canCreate ? 'grid-cols-2' : 'grid-cols-1']">
       <router-link v-if="canCreate" :to="{ name: 'ScheduleNew' }" :class="[action, 'bg-primary-600 text-white hover:bg-primary-500']">
         <PlusIcon class="h-5 w-5" /> {{ t('dashboard.new') }}
       </router-link>
-      <router-link to="/my-agenda/" :class="[action, actionLight]"><CalendarIcon class="h-5 w-5" /> {{ t('nav.myAgenda') }}</router-link>
-      <router-link to="/agenda/" :class="[action, actionLight]"><CalendarDaysIcon class="h-5 w-5" /> {{ t('nav.agenda') }}</router-link>
+      <router-link to="/calendar" :class="[action, actionLight]"><CalendarDaysIcon class="h-5 w-5" /> {{ t('nav.calendar') }}</router-link>
     </nav>
 
     <!-- 4. Approvers -->
@@ -95,7 +94,7 @@
     <section :class="card">
       <div class="flex items-center justify-between">
         <h2 :class="sectionTitle">{{ t('dashboard.thisAndNextWeek') }}</h2>
-        <router-link to="/my-agenda/" :class="link">{{ t('dashboard.seeAgenda') }}</router-link>
+        <router-link to="/calendar" :class="link">{{ t('dashboard.seeAgenda') }}</router-link>
       </div>
       <ul v-if="twoWeeks.length" class="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
         <li v-for="item in twoWeeks.slice(0, 6)" :key="item.id">
@@ -127,7 +126,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { CalendarDaysIcon, CalendarIcon, PlusIcon, SignalSlashIcon } from '@heroicons/vue/24/outline'
+import { CalendarDaysIcon, PlusIcon, SignalSlashIcon } from '@heroicons/vue/24/outline'
 import { ChevronRightIcon } from '@heroicons/vue/20/solid'
 import { intlLocale, t } from '../i18n'
 import { useAuthStore } from '../stores/auth'
