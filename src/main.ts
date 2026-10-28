@@ -12,6 +12,7 @@ import { keepSessionAlive } from './utils/tokenRenewal'
 import { keepOfflineDataFresh } from './utils/offlineSync'
 import { t } from './i18n'
 import { listenForInstall } from './utils/install'
+import { keepAppUpToDate } from './utils/appVersion'
 
 const pinia = createPinia()
 
@@ -62,6 +63,8 @@ async function initializeApp() {
   // Now that auth state is potentially set, create and use the router.
   const router = createRouter()
   app.use(router)
+  // a new deploy: open apps reload into it (see utils/appVersion)
+  keepAppUpToDate(router)
 
   // Wait for the router to be ready before mounting.
   await router.isReady()

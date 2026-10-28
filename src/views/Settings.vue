@@ -135,6 +135,9 @@
         </div>
       </div>
       </fieldset>
+
+      <!-- which build this device runs (new deploys load by themselves, see utils/appVersion) -->
+      <p class="px-1 text-center text-xs text-slate-400 dark:text-slate-500">{{ t('settings.version', { version: APP_VERSION }) }}</p>
     </div>
   </div>
 </template>
@@ -150,6 +153,7 @@ import {
   MegaphoneIcon
 } from '@heroicons/vue/24/outline'
 import { intlLocale, t } from '../i18n'
+import { APP_VERSION } from '../utils/appVersion'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'

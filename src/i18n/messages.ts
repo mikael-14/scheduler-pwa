@@ -102,6 +102,7 @@ export const messages: Record<Locale, Record<string, string>> = {
 
     // settings
     'settings.title': 'Definições',
+    'settings.version': 'Versão {version}',
     'settings.subtitle': 'Configure as preferências da aplicação e a sincronização.',
     'settings.offlineSync': 'Consulta sem ligação',
     'settings.offlineSyncHelp': 'A agenda desta semana e da próxima fica guardada neste dispositivo, para a ver sem ligação. Criar ou alterar agendamentos precisa de ligação.',
@@ -462,6 +463,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'notifications.title': 'Notifications',
 
     'settings.title': 'Settings',
+    'settings.version': 'Version {version}',
     'settings.subtitle': 'Configure your application preferences and synchronization.',
     'settings.offlineSync': 'Offline viewing',
     'settings.offlineSyncHelp': 'This week and next are saved on this device, so you can see them without a connection. Creating or changing schedules needs a connection.',

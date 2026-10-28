@@ -14,7 +14,7 @@
 
 <IfModule mod_headers.c>
     # Never cache the entry points, so a new version is picked up at once
-    <FilesMatch "^(index\.html|sw\.js|push-sw\.js|registerSW\.js|manifest\.webmanifest)$">
+    <FilesMatch "^(index\.html|sw\.js|push-sw\.js|registerSW\.js|manifest\.webmanifest|version\.json)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate"
     </FilesMatch>
     # Built files have a hash in their name: cache them for a year

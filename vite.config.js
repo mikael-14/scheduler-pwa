@@ -1,10 +1,28 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'// Swap this out for react() if you're using React!
 import { VitePWA } from 'vite-plugin-pwa'
+import { readFileSync } from 'node:fs'
+
+// Every build is a new version ("0.0.1+202610281530"): built into the app and written to
+// version.json, so open apps see a new deploy and reload (src/utils/appVersion)
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+const APP_VERSION = `${version}+${new Date().toISOString().replace(/\D/g, '').slice(0, 12)}`
+
+const versionFile = {
+  name: 'app-version-file',
+  apply: 'build',
+  generateBundle() {
+    this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: APP_VERSION }) })
+  },
+}
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   plugins: [
     vue(),
+    versionFile,
     VitePWA({
       registerType: 'autoUpdate',
       // icons live in public/img/icons (drawn by a script; replace the PNGs to change the logo,
