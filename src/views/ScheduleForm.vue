@@ -14,7 +14,7 @@
       class="page-card border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
       {{ loadError }}
     </p>
-    <p v-else-if="options && !options.types.length"
+    <p v-else-if="options && !bookableTypes.length"
       class="page-card border-dashed border-slate-300 px-4 py-6 text-center sm:p-6 text-sm text-slate-500 dark:border-slate-700">
       {{ t('schedule.noTypes') }}
     </p>
@@ -30,7 +30,7 @@
       <fieldset>
         <legend class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('schedule.type') }}</legend>
         <div class="mt-2 grid gap-2 sm:grid-cols-2">
-          <label v-for="option in options.types" :key="option.id" :class="['flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition',
+          <label v-for="option in bookableTypes" :key="option.id" :class="['flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition',
             form.schedule_type_id === option.id
               ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500 dark:bg-primary-500/10'
               : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600']">
@@ -38,7 +38,10 @@
             <span class="mt-1 h-3 w-3 shrink-0 rounded-full"
               :style="{ backgroundColor: option.color || '#94a3b8' }"></span>
             <span class="min-w-0">
-              <span class="block text-sm font-semibold text-slate-900 dark:text-white">{{ option.name }}</span>
+              <span class="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                {{ option.name }}
+                <span v-if="option.ended" class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ t('schedule.typeEnded') }}</span>
+              </span>
               <span v-if="option.description" class="block text-xs text-slate-500 dark:text-slate-400">{{
                 option.description }}</span>
             </span>
@@ -207,6 +210,11 @@ const form = reactive({
 
 const inputClass = 'mt-1 block w-full rounded-lg border border-slate-300 bg-white p-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white'
 
+// types whose end has passed: only for people who may book the past, or the one this schedule already has
+const originalTypeId = ref<number | null>(null)
+const bookableTypes = computed(() => (options.value?.types ?? []).filter((option) =>
+  !option.ended || options.value?.can.past_dates || option.id === originalTypeId.value))
+
 const type = computed(() => options.value?.types.find((option) => option.id === form.schedule_type_id) ?? null)
 
 // "all day" (no hours): on types that allow it, for people allowed to give no hours; an
@@ -302,6 +310,7 @@ async function load() {
         return
       }
       form.schedule_type_id = schedule.schedule_type_id
+      originalTypeId.value = schedule.schedule_type_id
       form.all_day = schedule.all_day
       openedAllDay.value = schedule.all_day
       form.start = schedule.all_day ? toInputDate(schedule.start) : toInputDateTime(schedule.start)
@@ -313,7 +322,7 @@ async function load() {
     } else {
       // a link can pick the type (e.g. a "nobody yet for Walks" alert), if it is still active
       const wanted = Number(route.query.type)
-      form.schedule_type_id = formOptions.types.find((option) => option.id === wanted)?.id ?? formOptions.types[0]?.id ?? null
+      form.schedule_type_id = bookableTypes.value.find((option) => option.id === wanted)?.id ?? bookableTypes.value[0]?.id ?? null
       prefillFromQuery()
     }
   } catch (e) {

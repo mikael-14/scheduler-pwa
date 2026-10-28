@@ -81,6 +81,8 @@ export interface ScheduleTypeOption {
   /** date window of the type */
   start: string | null;
   end: string | null;
+  /** its end has passed: no new schedules (only people who may book the past record some afterwards) */
+  ended: boolean;
   /** daily hours, "HH:mm" */
   min_time: string | null;
   max_time: string | null;
