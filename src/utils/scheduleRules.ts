@@ -27,13 +27,16 @@ export function inputLimits(type: ScheduleTypeOption | null, allDay: boolean, pa
   return { min, max: asInput(type?.end) }
 }
 
-/** "a partir de 1 nov 2026 · até 31 dez 2026 · precisa de hora de fim" (the type's hours are not a rule). */
+/**
+ * "a partir de 1 nov 2026, 09:00 · até 31 dez 2026, 18:00" (the type's hours are not a rule;
+ * needing an end goes without saying: the form asks for it).
+ */
 export function rulesSummary(type: ScheduleTypeOption | null): string {
   if (!type) return ''
+  const when = (value: string) => formatServerDateTime(value, { dateStyle: 'medium', timeStyle: 'short' })
   const parts: string[] = []
-  if (type.start) parts.push(t('schedule.rulesFrom', { date: formatServerDateTime(type.start, { dateStyle: 'medium' }) }))
-  if (type.end) parts.push(t('schedule.rulesUntil', { date: formatServerDateTime(type.end, { dateStyle: 'medium' }) }))
-  if (type.range) parts.push(t('schedule.rulesNeedsEnd'))
+  if (type.start) parts.push(t('schedule.rulesFrom', { date: when(type.start) }))
+  if (type.end) parts.push(t('schedule.rulesUntil', { date: when(type.end) }))
   return parts.join(' · ')
 }
 

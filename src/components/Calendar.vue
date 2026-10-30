@@ -10,9 +10,9 @@
           <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{{ currentViewTitle }}</h1>
         </div>
 
-        <!-- phones: 3 × 2, so each column pairs the views of one period (month, week); a row from sm up -->
-        <div class="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800 sm:flex sm:items-center sm:self-auto">
-          <button v-for="view in VIEW_BUTTONS" :key="view.name" type="button"
+        <!-- phones: a grid sized to the visible views (see viewGridCols); a row from sm up -->
+        <div :class="['grid gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800 sm:flex sm:items-center sm:self-auto', viewGridCols]">
+          <button v-for="view in viewButtons" :key="view.name" type="button"
             @click="changeView(view.name)"
             :class="['whitespace-nowrap px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', currentView === view.name ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900']">
             {{ t(view.label) }}
@@ -144,6 +144,7 @@ import { SignalSlashIcon } from '@heroicons/vue/24/outline'
 import { CALENDAR_TIMEZONE, dateToInput } from '../utils/datetime'
 import { loadCalendarOptions, savedCalendarHours, savedCalendarFilterOptions, NO_FILTER_OPTIONS, type CalendarHours, type CalendarFilterOptions } from '../utils/scheduleRules'
 import { saveCalendarFilters, savedCalendarFilters, withKnownChoices, type CalendarFilters as Filters } from '../utils/calendarFilters'
+import { CALENDAR_VIEWS, calendarViewSettings } from '../utils/calendarViews'
 import type { Schedule } from '../api/schedules'
 
 const toast = useToastStore()
@@ -181,19 +182,16 @@ const headingZone = CALENDAR_TIMEZONE
 const store = useSchedulesStore()
 const calendarRef = ref<any>(null)
 
-// Coming back always opens the planner on this week: nothing of the last visit is kept
+// Coming back always opens this device's chosen view on this week: nothing of the last visit is kept
 // (landing on an old week, or a view chosen long ago, was confusing)
-const initialView = 'weekPlanner'
+const initialView = calendarViewSettings.value.initial
 
-// The view buttons, in the order of the phone's 3 × 2 grid
-const VIEW_BUTTONS = [
-  { name: 'dayGridMonth', label: 'calendar.month' },
-  { name: 'timeGridWeek', label: 'calendar.week' },
-  { name: 'timeGridDay', label: 'calendar.day' },
-  { name: 'monthDots', label: 'calendar.compactMonth' },
-  { name: 'weekPlanner', label: 'calendar.planner' },
-  { name: 'listWeek', label: 'calendar.list' },
-]
+// The view buttons this device shows (see Settings), in the order of CALENDAR_VIEWS
+const viewButtons = computed(() =>
+  CALENDAR_VIEWS.filter((view) => calendarViewSettings.value.visible.includes(view.name)))
+// phones: up to 4 buttons in one row, 5–6 in a 3-column grid (6: each column pairs month / week)
+const VIEW_GRID_COLS = ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4', 'grid-cols-3', 'grid-cols-3']
+const viewGridCols = computed(() => VIEW_GRID_COLS[viewButtons.value.length - 1])
 
 // The compact views (see compactViewsPlugin) show the same period as these: same header labels
 const SAME_PERIOD: Record<string, string> = { monthDots: 'dayGridMonth', weekPlanner: 'timeGridWeek' }
@@ -324,7 +322,11 @@ const currentViewTitle = computed(() => {
   switch (baseView(currentView.value)) {
     case 'dayGridMonth': return t('calendar.monthView')
     case 'timeGridDay': return t('calendar.dayView')
-    case 'timeGridWeek':
+  }
+  // the timesheet and the planner share a period, not a title
+  switch (currentView.value) {
+    case 'timeGridWeek': return t('calendar.timesheetView')
+    case 'weekPlanner':
     default:
       return t('calendar.weekView')
   }

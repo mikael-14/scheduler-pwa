@@ -52,7 +52,7 @@
 
       <template v-if="type">
         <!-- the type's rules, so nobody has to find out by trial and error -->
-        <p v-if="typeRules" class="text-xs text-slate-500 dark:text-slate-400">{{ typeRules }}</p>
+        <p v-if="typeRules" class="text-sm font-bold text-slate-600 dark:text-slate-300">{{ typeRules }}</p>
 
         <!-- start, end and the all day switch on one row, the switch only as wide as it needs -->
         <div :class="['grid gap-4', type.range && allDayOffered ? 'sm:grid-cols-[1fr_1fr_auto]' : 'sm:grid-cols-2']">
