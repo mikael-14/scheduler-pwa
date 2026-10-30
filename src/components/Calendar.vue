@@ -476,6 +476,15 @@ const handleEventDidMount = (info: any) => {
   --fc-border-color: rgba(30, 41, 59, 0.8);
   --fc-today-bg-color: rgba(16, 185, 129, 0.1);
   --selected-day-bg: rgba(16, 185, 129, 0.22);
+  /* Sticky day headers and list-day rows default to white */
+  --fc-page-bg-color: #0f172a; /* slate-900, matches the card */
+  --fc-neutral-bg-color: #1e293b; /* slate-800 */
+  --fc-neutral-text-color: #94a3b8; /* slate-400 */
+  --fc-list-event-hover-bg-color: #1e293b;
+}
+
+.dark .filament-calendar .fc-list-day-cushion {
+  @apply text-slate-200;
 }
 
 .fc-theme-standard .fc-scrollgrid {
