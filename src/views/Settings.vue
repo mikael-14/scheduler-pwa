@@ -50,48 +50,6 @@
 
       <OfflineNotice />
 
-      <!-- Agenda views: kept on this device only (see utils/calendarViews) -->
-      <div class="page-card border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="px-4 py-6 sm:p-6">
-          <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400">
-              <CalendarDaysIcon class="h-6 w-6" />
-            </div>
-            <div>
-              <h3 class="text-lg font-medium text-slate-900 dark:text-white">{{ t('settings.calendarViews') }}</h3>
-              <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('settings.calendarViewsHelp') }}</p>
-            </div>
-          </div>
-
-          <div class="mt-6 space-y-3">
-            <div v-for="view in CALENDAR_VIEWS" :key="view.name" class="flex items-center justify-between gap-4">
-              <p class="text-sm text-slate-900 dark:text-white">{{ t(view.label) }}</p>
-              <!-- the last visible view can't be turned off -->
-              <button type="button" role="switch" :aria-checked="isVisible(view.name)" :aria-label="t(view.label)"
-                :disabled="isVisible(view.name) && viewSettings.visible.length === 1"
-                @click="toggleCalendarView(view.name)"
-                :class="[isVisible(view.name) ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']"
-                class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                <span :class="isVisible(view.name) ? 'translate-x-5' : 'translate-x-0'"
-                  class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
-              </button>
-            </div>
-          </div>
-
-          <div class="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 dark:border-slate-800">
-            <div>
-              <label for="initial-view" class="text-sm font-medium text-slate-900 dark:text-white">{{ t('settings.initialView') }}</label>
-              <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('settings.initialViewHelp') }}</p>
-            </div>
-            <select id="initial-view" :value="viewSettings.initial"
-              @change="setInitialCalendarView(($event.target as HTMLSelectElement).value as CalendarView)"
-              class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:w-56 sm:text-sm">
-              <option v-for="view in visibleViews" :key="view.name" :value="view.name">{{ t(view.label) }}</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
       <!-- Notification preferences: stored on the user, shared with the admin panel -->
       <fieldset :disabled="connection.status === 'offline'" class="min-w-0 disabled:opacity-60">
       <div class="page-card border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -178,6 +136,49 @@
       </div>
       </fieldset>
 
+      
+      <!-- Agenda views: kept on this device only (see utils/calendarViews) -->
+      <div class="page-card border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="px-4 py-6 sm:p-6">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400">
+              <CalendarDaysIcon class="h-6 w-6" />
+            </div>
+            <div>
+              <h3 class="text-lg font-medium text-slate-900 dark:text-white">{{ t('settings.calendarViews') }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('settings.calendarViewsHelp') }}</p>
+            </div>
+          </div>
+
+          <div class="mt-6 space-y-3">
+            <div v-for="view in CALENDAR_VIEWS" :key="view.name" class="flex items-center justify-between gap-4">
+              <p class="text-sm text-slate-900 dark:text-white">{{ t(view.label) }}</p>
+              <!-- the last visible view can't be turned off -->
+              <button type="button" role="switch" :aria-checked="isVisible(view.name)" :aria-label="t(view.label)"
+                :disabled="isVisible(view.name) && viewSettings.visible.length === 1"
+                @click="toggleCalendarView(view.name)"
+                :class="[isVisible(view.name) ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']"
+                class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                <span :class="isVisible(view.name) ? 'translate-x-5' : 'translate-x-0'"
+                  class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 dark:border-slate-800">
+            <div>
+              <label for="initial-view" class="text-sm font-medium text-slate-900 dark:text-white">{{ t('settings.initialView') }}</label>
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('settings.initialViewHelp') }}</p>
+            </div>
+            <select id="initial-view" :value="viewSettings.initial"
+              @change="setInitialCalendarView(($event.target as HTMLSelectElement).value as CalendarView)"
+              class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:w-56 sm:text-sm">
+              <option v-for="view in visibleViews" :key="view.name" :value="view.name">{{ t(view.label) }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
       <!-- which build this device runs (new deploys load by themselves, see utils/appVersion) -->
       <p class="px-1 text-center text-xs text-slate-400 dark:text-slate-500">{{ t('settings.version', { version: APP_VERSION }) }}</p>
     </div>

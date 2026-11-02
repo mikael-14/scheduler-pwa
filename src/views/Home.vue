@@ -19,19 +19,23 @@
         </h2>
         <router-link to="/notifications" :class="link">{{ t('dashboard.seeAll') }}</router-link>
       </div>
+      <!-- unread only; opening one marks it as read -->
       <ul v-if="notifications.length" class="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
         <li v-for="item in notifications" :key="item.id">
-          <router-link :to="item.path && item.path !== '/notifications' ? item.path : '/notifications'" class="flex items-start gap-3 py-2.5">
-            <span :class="['mt-1.5 h-2 w-2 shrink-0 rounded-full', item.read_at ? 'bg-slate-300 dark:bg-slate-700' : 'bg-primary-600']"></span>
+          <button type="button" @click="openNotification(item)" class="flex w-full items-start gap-3 py-2.5 text-left">
+            <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary-600"></span>
             <span class="min-w-0 flex-1">
-              <span :class="['block truncate text-sm text-slate-900 dark:text-white', item.read_at ? '' : 'font-semibold']">{{ item.title }}</span>
+              <span class="block truncate text-sm font-semibold text-slate-900 dark:text-white">{{ item.title }}</span>
               <span class="block truncate text-xs text-slate-500 dark:text-slate-400">{{ firstLine(item.body) }}</span>
             </span>
             <span class="shrink-0 text-xs text-slate-400">{{ relative(item.created_at) }}</span>
-          </router-link>
+          </button>
         </li>
       </ul>
-      <p v-else class="mt-3 text-sm text-slate-500">{{ notificationsError ?? t('dashboard.noNotifications') }}</p>
+      <p v-else class="mt-3 text-sm text-slate-500">{{ notificationsError ?? t('dashboard.noUnread') }}</p>
+      <p v-if="unread > notifications.length" class="mt-2 text-xs text-slate-500">
+        {{ t('dashboard.andMore', { count: unread - notifications.length }) }}
+      </p>
     </section>
 
     <!-- 2. Next schedule -->
@@ -109,23 +113,12 @@
       <p v-else class="mt-3 text-sm text-slate-500">{{ loadingMine ? t('schedule.loading') : t('dashboard.nothingTwoWeeks') }}</p>
       <p v-if="twoWeeks.length > 6" class="mt-2 text-xs text-slate-500">{{ t('dashboard.andMore', { count: twoWeeks.length - 6 }) }}</p>
     </section>
-
-    <!-- 6. By type, next 30 days: mine and the whole shelter -->
-    <section class="grid gap-3 lg:grid-cols-2">
-      <div :class="card">
-        <h2 :class="sectionTitle">{{ t('dashboard.mineByType') }}</h2>
-        <TypeBreakdown :rows="mineComplete ? mineByType : []" :empty="mineComplete ? t('dashboard.noneIn30') : t('dashboard.needsConnection')" show-next />
-      </div>
-      <div v-if="canSeeAll" :class="card">
-        <h2 :class="sectionTitle">{{ t('dashboard.shelterByType') }}</h2>
-        <TypeBreakdown :rows="shelterComplete ? shelterByType : []" :empty="shelterComplete ? t('dashboard.noneIn30') : t('dashboard.needsConnection')" />
-      </div>
-    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { CalendarDaysIcon, PlusIcon, SignalSlashIcon } from '@heroicons/vue/24/outline'
 import { ChevronRightIcon } from '@heroicons/vue/20/solid'
 import { intlLocale, t } from '../i18n'
@@ -138,17 +131,18 @@ import { apiErrorMessage } from '../utils/apiError'
 import { formatServerDateTime, toInputDate } from '../utils/datetime'
 import { currentWindow } from '../utils/offlineSync'
 import StatusBadge from '../components/common/StatusBadge.vue'
-import TypeBreakdown, { type TypeRow } from '../components/TypeBreakdown.vue'
 
 /**
  * The home screen: what matters now, for the signed-in volunteer (and approvers).
  * Mostly read from data the app already has; offline it uses the saved two weeks.
  */
 const DAYS_AHEAD = 30
+const UNREAD_SHOWN = 5
 const ACTIVE: Schedule['status'][] = ['pending', 'approved']
 
 const authStore = useAuthStore()
 const badges = useBadgesStore()
+const router = useRouter()
 const connection = useConnectionStore()
 
 const card = 'page-card border-slate-200 bg-white px-4 py-5 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900'
@@ -181,8 +175,6 @@ const mine = ref<Schedule[]>([])
 const shelter = ref<Schedule[]>([])
 const loadingMine = ref(true)
 const mineError = ref<string | null>(null)
-const mineComplete = ref(true)
-const shelterComplete = ref(true)
 const offline = ref(false)
 
 const notifications = ref<AppNotification[]>([])
@@ -195,25 +187,22 @@ async function load() {
   const mineRequest = schedulesApi.fetchSchedules('admin', { ...range, mine: true })
     .then((result) => {
       mine.value = result.data
-      mineComplete.value = result.complete
       offline.value = result.offline
       mineError.value = null
     })
     .catch((error) => (mineError.value = apiErrorMessage(error, t('calendar.loadFailed'))))
     .finally(() => (loadingMine.value = false))
 
-  const shelterRequest = canSeeAll.value
+  // only the approvers' "this week" card reads the whole shelter
+  const shelterRequest = canSeeAll.value && authStore.canApprove()
     ? schedulesApi.fetchSchedules('admin', range)
-      .then((result) => {
-        shelter.value = result.data
-        shelterComplete.value = result.complete
-      })
-      .catch(() => (shelterComplete.value = false))
+      .then((result) => (shelter.value = result.data))
+      .catch(() => undefined)
     : Promise.resolve()
 
   const notificationsRequest = notificationsApi.list()
     .then((result) => {
-      notifications.value = result.data.slice(0, 3)
+      notifications.value = result.data.filter((item) => !item.read_at).slice(0, UNREAD_SHOWN)
       unread.value = result.unread
       notificationsError.value = null
     })
@@ -237,22 +226,6 @@ const twoWeeks = computed(() => {
   const saved = currentWindow(new Date(now.value))
   return myUpcoming.value.filter((schedule) => toInputDate(schedule.start) <= saved.to)
 })
-
-function byType(list: Schedule[]): TypeRow[] {
-  const rows = new Map<number, TypeRow>()
-  for (const schedule of upcoming(list)) {
-    const type = schedule.schedule_type
-    if (!type) continue
-    const row = rows.get(type.id) ?? { id: type.id, name: type.name, color: type.color, count: 0, pending: 0, next: null }
-    row.count++
-    if (schedule.status === 'pending') row.pending++
-    row.next ??= shortWhen(schedule) // the list is sorted: the first one is the next
-    rows.set(type.id, row)
-  }
-  return [...rows.values()].sort((a, b) => b.count - a.count)
-}
-const mineByType = computed(() => byType(mine.value))
-const shelterByType = computed(() => byType(shelter.value))
 
 /** This week (Monday to Sunday) across the shelter. */
 const weekSummary = computed(() => {
@@ -318,6 +291,19 @@ function companions(schedule: Schedule): string {
 }
 
 const firstLine = (text: string) => (text ?? '').split('\n')[0]
+
+/** Mark it as read (as on the notifications screen), then go where it points. */
+async function openNotification(item: AppNotification) {
+  try {
+    await notificationsApi.markRead(item.id)
+    notifications.value = notifications.value.filter((other) => other.id !== item.id)
+    unread.value = Math.max(0, unread.value - 1)
+    badges.unreadNotifications = Math.max(0, badges.unreadNotifications - 1)
+  } catch {
+    /* offline: it stays unread, navigating matters more */
+  }
+  router.push(item.path && item.path !== '/notifications' ? item.path : '/notifications')
+}
 
 // ---- life cycle
 
