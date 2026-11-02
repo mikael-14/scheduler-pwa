@@ -13,7 +13,7 @@
             <div class="mt-1">
               <input v-model="form.name" id="full-name" name="name" type="text" autocomplete="name" required
                 class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:text-sm"
-                placeholder="John Doe" />
+                :placeholder="t('register.fullNamePlaceholder')" />
             </div>
           </div>
 

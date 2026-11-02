@@ -15,6 +15,7 @@
           <NavItem to="/" icon="HomeIcon">{{ t('nav.home') }}</NavItem>
           <NavItem to="/calendar" icon="CalendarDaysIcon">{{ t('nav.calendar') }}</NavItem>
           <NavItem v-if="authStore.canApprove()" to="/approvals" icon="CheckBadgeIcon" :badge="badges.pendingApprovals">{{ t('nav.approvals') }}</NavItem>
+          <NavItem v-if="authStore.can('view_any_schedule_type')" to="/schedule-types" icon="TagIcon">{{ t('nav.scheduleTypes') }}</NavItem>
           <NavItem to="/notifications" icon="BellIcon" :badge="badges.unreadNotifications">{{ t('nav.notifications') }}</NavItem>
           <NavItem to="/profile" icon="UserIcon">{{ t('nav.profile') }}</NavItem>
           <NavItem to="/settings" icon="Cog6ToothIcon">{{ t('nav.settings') }}</NavItem>
@@ -62,7 +63,7 @@
           </button>
           <router-link to="/profile"
             class="h-8 w-8 overflow-hidden rounded-full border border-slate-200 dark:border-slate-700">
-            <img :src="user?.avatar_url || 'https://ui-avatars.com/api/?name=' + (user?.name || t('nav.defaultAvatarName'))" alt="Avatar" />
+            <img :src="user?.avatar_url || 'https://ui-avatars.com/api/?name=' + (user?.name || t('nav.defaultAvatarName'))" :alt="t('profile.avatarAlt')" />
           </router-link>
         </div>
       </header>
@@ -85,6 +86,7 @@
             <NavItem to="/" icon="HomeIcon" @click="isMobileMenuOpen = false">{{ t('nav.home') }}</NavItem>
             <NavItem to="/calendar" icon="CalendarDaysIcon" @click="isMobileMenuOpen = false">{{ t('nav.calendar') }}</NavItem>
             <NavItem v-if="authStore.canApprove()" to="/approvals" icon="CheckBadgeIcon" :badge="badges.pendingApprovals" @click="isMobileMenuOpen = false">{{ t('nav.approvals') }}</NavItem>
+            <NavItem v-if="authStore.can('view_any_schedule_type')" to="/schedule-types" icon="TagIcon" @click="isMobileMenuOpen = false">{{ t('nav.scheduleTypes') }}</NavItem>
             <NavItem to="/notifications" icon="BellIcon" :badge="badges.unreadNotifications" @click="isMobileMenuOpen = false">{{ t('nav.notifications') }}</NavItem>
             <NavItem to="/profile" icon="UserIcon" @click="isMobileMenuOpen = false">{{ t('nav.profile') }}</NavItem>
             <NavItem to="/settings" icon="Cog6ToothIcon" @click="isMobileMenuOpen = false">{{ t('nav.settings') }}</NavItem>

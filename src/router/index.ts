@@ -15,6 +15,10 @@ const routes = [
   { path: '/schedules/new', name: 'ScheduleNew', component: () => import('../views/ScheduleForm.vue'), meta: { requiresAuth: true } },
   { path: '/schedules/:id', name: 'ScheduleDetail', component: () => import('../views/ScheduleDetail.vue'), meta: { requiresAuth: true } },
   { path: '/schedules/:id/edit', name: 'ScheduleEdit', component: () => import('../views/ScheduleForm.vue'), meta: { requiresAuth: true } },
+  // managing schedule types: each page needs all its permissions (the API checks them again)
+  { path: '/schedule-types', name: 'ScheduleTypes', component: () => import('../views/ScheduleTypes.vue'), meta: { requiresAuth: true, permissions: ['view_any_schedule_type'] } },
+  { path: '/schedule-types/new', name: 'ScheduleTypeNew', component: () => import('../views/ScheduleTypeForm.vue'), meta: { requiresAuth: true, permissions: ['view_any_schedule_type', 'create_schedule_type'] } },
+  { path: '/schedule-types/:id/edit', name: 'ScheduleTypeEdit', component: () => import('../views/ScheduleTypeForm.vue'), meta: { requiresAuth: true, permissions: ['view_schedule_type', 'update_schedule_type'] } },
   { path: '/approvals', name: 'Approvals', component: () => import('../views/Approvals.vue'), meta: { requiresAuth: true, requiresApprover: true } },
   { path: '/notifications', name: 'Notifications', component: () => import('../views/Notifications.vue'), meta: { requiresAuth: true } },
   { path: '/profile', name: 'Profile', component: () => import('../views/Profile.vue'), meta: { requiresAuth: true } },
@@ -74,6 +78,12 @@ export default function createRouter(): Router {
 
       // Approval screen: only for people who can approve (the API enforces it as well)
       if (to.meta.requiresApprover && !authStore.canApprove()) {
+        return next({ name: 'Home' })
+      }
+
+      // pages that need permissions: all of them
+      const needed = (to.meta.permissions as string[] | undefined) ?? []
+      if (needed.some((name) => !authStore.can(name))) {
         return next({ name: 'Home' })
       }
 

@@ -125,22 +125,34 @@
         <FieldError :errors="errors.schedule_users" />
       </div>
 
-      <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-        {{ t('schedule.description') }}
-        <textarea v-model="form.description" rows="3" maxlength="255" :class="inputClass"></textarea>
-        <FieldError :errors="errors.description" />
-      </label>
+      <!-- description and internal note: closed until wanted, open when one is already filled -->
+      <div class="rounded-lg border border-slate-200 dark:border-slate-700">
+        <button type="button" @click="notesOpen = !notesOpen" :aria-expanded="notesOpen" aria-controls="schedule-notes"
+          class="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/60">
+          <span>
+            {{ options.can.internal_note ? t('schedule.notesStaff') : t('schedule.description') }}
+            <span v-if="!notesOpen && notesFilled" class="ml-1 text-xs font-normal text-slate-500">· {{ t('schedule.notesFilled') }}</span>
+          </span>
+          <ChevronDownIcon :class="['h-5 w-5 text-slate-400 transition-transform', notesOpen && 'rotate-180']" />
+        </button>
 
-      <!-- Staff only. No status here: a new schedule is pending; it is approved / rejected,
-        cancelled or marked as not shown from its page, and completed by the server -->
-      <template v-if="options.can.internal_note">
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-          {{ t('schedule.internalNote') }}
-          <textarea v-model="form.internal_note" rows="2" maxlength="255" :class="inputClass"></textarea>
-          <span class="mt-1 block text-xs font-normal text-slate-500">{{ t('schedule.internalNoteHelp') }}</span>
-          <FieldError :errors="errors.internal_note" />
-        </label>
-      </template>
+        <div v-show="notesOpen" id="schedule-notes" class="space-y-4 border-t border-slate-200 px-3 py-4 dark:border-slate-700">
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            {{ t('schedule.description') }}
+            <textarea v-model="form.description" rows="3" maxlength="255" :class="inputClass"></textarea>
+            <FieldError :errors="errors.description" />
+          </label>
+
+          <!-- Staff only. No status here: a new schedule is pending; it is approved / rejected,
+            cancelled or marked as not shown from its page, and completed by the server -->
+          <label v-if="options.can.internal_note" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            {{ t('schedule.internalNote') }}
+            <textarea v-model="form.internal_note" rows="2" maxlength="255" :class="inputClass"></textarea>
+            <span class="mt-1 block text-xs font-normal text-slate-500">{{ t('schedule.internalNoteHelp') }}</span>
+            <FieldError :errors="errors.internal_note" />
+          </label>
+        </div>
+      </div>
 
       <p v-if="!isEdit" class="text-xs text-slate-500 dark:text-slate-400">
         {{ t('schedule.needsApproval') }}
@@ -165,7 +177,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ChevronLeftIcon, XMarkIcon } from '@heroicons/vue/20/solid'
+import { ChevronDownIcon, ChevronLeftIcon, XMarkIcon } from '@heroicons/vue/20/solid'
 import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 import { t } from '../i18n'
 import { schedulesApi, type ScheduleFormOptions, type ScheduleInput } from '../api/schedules'
@@ -288,6 +300,10 @@ function plusOneHour(input: string): string {
 }
 
 /** New schedule: the slot tapped in the calendar, if any. */
+/** The description / internal note section: closed by default, opened on load when one has text. */
+const notesOpen = ref(false)
+const notesFilled = computed(() => !!form.description.trim() || (!!options.value?.can.internal_note && !!form.internal_note.trim()))
+
 function prefillFromQuery() {
   const start = typeof route.query.start === 'string' ? route.query.start : ''
   if (!start) return
@@ -319,6 +335,7 @@ async function load() {
       form.internal_note = schedule.internal_note ?? ''
       form.user_id = formOptions.can.book_for_others ? schedule.user_id : null
       form.participants = schedule.schedule_users.map((participant) => participant.user_id)
+      notesOpen.value = notesFilled.value
     } else {
       // a link can pick the type (e.g. a "nobody yet for Walks" alert), if it is still active
       const wanted = Number(route.query.type)
@@ -377,6 +394,8 @@ async function submit() {
         all[field] = [...(all[field] ?? []), ...(messages as string[])]
         return all
       }, {} as Record<string, string[]>)
+      // an error in a closed section would go unseen
+      if (errors.value.description || errors.value.internal_note) notesOpen.value = true
     }
     toast.error(apiErrorMessage(e, t('schedule.saveFailed')))
   } finally {
