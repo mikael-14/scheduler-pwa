@@ -62,6 +62,13 @@ same sizes (the maskable one keeps the logo inside the middle 80%).
 - Access the application at `http://localhost:5173`.
 - The application supports offline functionality and can be installed as a PWA.
 
+### Permissions
+
+The app shows each page and button only to who may use it, from the permissions the API sends
+(`GET /api/user`) and each schedule's `can` flags; the API checks everything again. Page guards
+are in `src/router/index.ts` (`meta.permissions`). The roles, their permissions and what each page
+needs are described in `scheduler-api/README.md` ("Permissions and roles" → "In the PWA").
+
 ### SSH
 
 ```

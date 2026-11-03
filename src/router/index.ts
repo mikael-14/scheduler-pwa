@@ -8,13 +8,15 @@ const routes = [
   { path: '/forgot-password', name: 'ForgotPassword', component: () => import('../views/ForgotPassword.vue'), meta: { public: true } },
   // opened from the email; works whoever is signed in on this device (the reset signs everyone out)
   { path: '/reset-password', name: 'ResetPassword', component: () => import('../views/ResetPassword.vue'), meta: { public: true } },
-  { path: '/calendar', name: 'Calendar', component: () => import('../views/CalendarView.vue'), meta: { requiresAuth: true } },
+  // schedules: the same permissions as their API calls (e.g. an Externo, who only joins, never
+  // lands on the booking form); what can be done with each schedule comes from the API (`can`)
+  { path: '/calendar', name: 'Calendar', component: () => import('../views/CalendarView.vue'), meta: { requiresAuth: true, permissions: ['view_any_schedule'] } },
   // the two calendars of before ("My agenda" is now the "Only mine" filter)
   { path: '/agenda/', redirect: '/calendar' },
   { path: '/my-agenda/', redirect: '/calendar' },
-  { path: '/schedules/new', name: 'ScheduleNew', component: () => import('../views/ScheduleForm.vue'), meta: { requiresAuth: true } },
-  { path: '/schedules/:id', name: 'ScheduleDetail', component: () => import('../views/ScheduleDetail.vue'), meta: { requiresAuth: true } },
-  { path: '/schedules/:id/edit', name: 'ScheduleEdit', component: () => import('../views/ScheduleForm.vue'), meta: { requiresAuth: true } },
+  { path: '/schedules/new', name: 'ScheduleNew', component: () => import('../views/ScheduleForm.vue'), meta: { requiresAuth: true, permissions: ['create_schedule'] } },
+  { path: '/schedules/:id', name: 'ScheduleDetail', component: () => import('../views/ScheduleDetail.vue'), meta: { requiresAuth: true, permissions: ['view_schedule'] } },
+  { path: '/schedules/:id/edit', name: 'ScheduleEdit', component: () => import('../views/ScheduleForm.vue'), meta: { requiresAuth: true, permissions: ['update_schedule'] } },
   // managing schedule types: each page needs all its permissions (the API checks them again)
   { path: '/schedule-types', name: 'ScheduleTypes', component: () => import('../views/ScheduleTypes.vue'), meta: { requiresAuth: true, permissions: ['view_any_schedule_type'] } },
   { path: '/schedule-types/new', name: 'ScheduleTypeNew', component: () => import('../views/ScheduleTypeForm.vue'), meta: { requiresAuth: true, permissions: ['view_any_schedule_type', 'create_schedule_type'] } },
