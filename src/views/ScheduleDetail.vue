@@ -53,33 +53,6 @@
               <span v-if="!schedule.schedule_users.length" class="text-sm text-slate-500">—</span>
             </dd>
           </div>
-          <!-- approvers: people who joined this (already decided) schedule, decided one by one -->
-          <div v-if="pendingParticipants.length" class="sm:col-span-2">
-            <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('approvals.participationsTitle') }}</dt>
-            <dd class="mt-1 space-y-2">
-              <div v-for="participant in pendingParticipants" :key="participant.user_id"
-                class="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <span class="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
-                    <UserAvatar :name="participant.name ?? '?'" :src="participant.avatar_url" size="h-7 w-7" />
-                    {{ participant.name ?? '?' }}
-                  </span>
-                  <span class="flex gap-2">
-                    <button type="button" @click="decideParticipant(participant, false)" :disabled="!online"
-                      class="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950">
-                      {{ t('approvals.reject') }}
-                    </button>
-                    <button type="button" @click="decideParticipant(participant, true)" :disabled="!online || !!participant.approval_problem"
-                      :title="participant.approval_problem ?? undefined"
-                      class="rounded-lg bg-primary-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-primary-500 disabled:opacity-50">
-                      {{ t('approvals.approve') }}
-                    </button>
-                  </span>
-                </div>
-                <ApprovalProblem :problem="participant.approval_problem" />
-              </div>
-            </dd>
-          </div>
           <div v-if="schedule.description" class="sm:col-span-2">
             <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('schedule.description') }}</dt>
             <dd class="mt-1 whitespace-pre-line text-sm text-slate-900 dark:text-white">{{ schedule.description }}</dd>
@@ -147,7 +120,6 @@ import { useConnectionStore } from '../stores/connection'
 import StatusBadge from '../components/common/StatusBadge.vue'
 import ApprovalProblem from '../components/common/ApprovalProblem.vue'
 import UserAvatar from '../components/common/UserAvatar.vue'
-import { useBadgesStore } from '../stores/badges'
 
 const route = useRoute()
 const router = useRouter()
@@ -169,11 +141,6 @@ const hasActions = computed(() => {
   return can.update || can.cancel || can.not_shown || can.approve || can.join || can.leave
 })
 const online = computed(() => !schedule.value?.offline && connection.status !== 'offline')
-// approvers: pending participants of a decided schedule (on a pending one they follow its decision)
-const pendingParticipants = computed<ScheduleParticipant[]>(() =>
-  schedule.value?.can.approve_participants && schedule.value.status !== 'pending'
-    ? schedule.value.schedule_users.filter((participant) => participant.status === 'pending')
-    : [])
 
 const load = async () => {
   loading.value = true
@@ -308,31 +275,6 @@ const leave = () => dialog.confirm({
     }
   },
 })
-
-/** Approvers: decide on one person who joined; the message is sent to them. */
-const decideParticipant = (participant: ScheduleParticipant, approve: boolean) => {
-  const current = schedule.value!
-
-  dialog.prompt({
-    title: t(approve ? 'approvals.approveParticipationTitle' : 'approvals.rejectParticipationTitle'),
-    message: `${participant.name ?? ''} · ${current.schedule_type?.name ?? ''} · ${period.value}`,
-    tone: approve ? 'success' : 'danger',
-    confirmLabel: t(approve ? 'approvals.approve' : 'approvals.reject'),
-    cancelLabel: t('approvals.cancel'),
-    field: { label: t('approvals.message'), help: t('approvals.participationMessageHelp'), maxLength: 1000, rows: 3 },
-    onConfirm: async (text) => {
-      try {
-        await schedulesApi.decideParticipant(current.id, participant.user_id, approve, text)
-        toast.success(t(approve ? 'approvals.participationApproved' : 'approvals.participationRejected'))
-        useBadgesStore().refresh()
-      } catch (e) {
-        toast.error(apiErrorMessage(e, t('approvals.decisionFailed')))
-        if (isNetworkError(e)) throw e
-      }
-      await load()
-    },
-  })
-}
 
 onMounted(load)
 watch(() => route.params.id, (id) => id && load())

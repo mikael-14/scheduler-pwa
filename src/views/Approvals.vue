@@ -66,56 +66,13 @@
       </li>
     </ul>
 
-    <!-- people who joined an approved schedule -->
-    <template v-if="participations.length">
-      <h3 class="pt-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('approvals.participationsTitle') }}</h3>
-      <ul class="space-y-3">
-        <li v-for="item in participations" :key="`${item.schedule_id}-${item.user?.id}`"
-          class="page-card border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div class="flex items-start gap-3">
-            <!-- the photo of who wants to join, with the type's colour on its corner -->
-            <span class="relative shrink-0">
-              <UserAvatar :name="item.user?.name ?? '?'" :src="item.user?.avatar_url" size="h-10 w-10" />
-              <span class="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full ring-2 ring-white dark:ring-slate-900"
-                :style="{ backgroundColor: item.schedule_type?.color || '#94a3b8' }"></span>
-            </span>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                {{ t('approvals.wantsToJoin', { name: item.user?.name ?? t('approvals.unknownUser') }) }}
-              </p>
-              <p class="text-sm text-slate-600 dark:text-slate-300">
-                {{ item.schedule_type?.name }} · {{ period(item) }}
-              </p>
-              <p v-if="item.owner" class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <UserAvatar :name="item.owner.name" :src="item.owner.avatar_url" size="h-4 w-4" />
-                {{ t('approvals.scheduleOf', { name: item.owner.name }) }}
-              </p>
-              <router-link v-if="canViewDetails" :to="{ name: 'ScheduleDetail', params: { id: item.schedule_id } }" class="text-xs font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ t('approvals.details') }}</router-link>
-              <ApprovalProblem :problem="item.approval_problem" />
-            </div>
-          </div>
-
-          <div class="mt-4 flex justify-end gap-2">
-            <button type="button" @click="openParticipationDialog(item, false)" :disabled="offline" :title="offline ? t('offline.needsConnection') : undefined"
-              class="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950">
-              {{ t('approvals.reject') }}
-            </button>
-            <button type="button" @click="openParticipationDialog(item, true)" :disabled="offline || !!item.approval_problem"
-              :title="offline ? t('offline.needsConnection') : item.approval_problem ?? undefined"
-              class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 disabled:opacity-50">
-              {{ t('approvals.approve') }}
-            </button>
-          </div>
-        </li>
-      </ul>
-    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { t } from '../i18n'
-import { schedulesApi, type PendingParticipation, type PendingSchedule } from '../api/schedules'
+import { schedulesApi, type PendingSchedule } from '../api/schedules'
 import { apiErrorMessage, isNetworkError } from '../utils/apiError'
 import { useToastStore } from '../stores/toast'
 import { useDialogStore } from '../stores/dialog'
@@ -134,9 +91,9 @@ const canViewDetails = useAuthStore().can('view_schedule')
 // deciding needs the server
 const connection = useConnectionStore()
 const offline = computed(() => connection.status === 'offline')
+// participants are decided with their schedule (they share its status)
 const items = ref<PendingSchedule[]>([])
-const participations = ref<PendingParticipation[]>([])
-const total = computed(() => items.value.length + participations.value.length)
+const total = computed(() => items.value.length)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -144,9 +101,7 @@ const load = async () => {
   loading.value = true
   error.value = null
   try {
-    const work = await schedulesApi.fetchPending()
-    items.value = work.schedules
-    participations.value = work.participations
+    items.value = await schedulesApi.fetchPending()
     badges.pendingApprovals = total.value
   } catch (e) {
     error.value = apiErrorMessage(e, t('approvals.loadFailed'))
@@ -180,30 +135,6 @@ const openDialog = (item: PendingSchedule, action: 'approve' | 'reject') => {
         if (isNetworkError(e)) throw e
       }
       // one decision can unblock others (someone who may go alone is now approved): reload all
-      await load()
-    },
-  })
-}
-
-/** Same for a participation; the message goes to the person. */
-const openParticipationDialog = (item: PendingParticipation, approve: boolean) => {
-  if (!item.user) return
-
-  dialog.prompt({
-    title: t(approve ? 'approvals.approveParticipationTitle' : 'approvals.rejectParticipationTitle'),
-    message: `${item.user.name} · ${item.schedule_type?.name ?? ''} · ${period(item)}`,
-    tone: approve ? 'success' : 'danger',
-    confirmLabel: t(approve ? 'approvals.approve' : 'approvals.reject'),
-    cancelLabel: t('approvals.cancel'),
-    field: { label: t('approvals.message'), help: t('approvals.participationMessageHelp'), maxLength: 1000, rows: 3 },
-    onConfirm: async (text) => {
-      try {
-        await schedulesApi.decideParticipant(item.schedule_id, item.user!.id, approve, text)
-        toast.success(t(approve ? 'approvals.participationApproved' : 'approvals.participationRejected'))
-      } catch (e) {
-        toast.error(apiErrorMessage(e, t('approvals.decisionFailed')))
-        if (isNetworkError(e)) throw e
-      }
       await load()
     },
   })
