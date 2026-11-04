@@ -84,8 +84,8 @@
         </div>
       </template>
 
-      <!-- Owner: only for people who may book for others -->
-      <div v-if="options.can.book_for_others" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+      <!-- Owner: for people who may book for others (new) / hand a schedule over (edit) -->
+      <div v-if="choosesOwner" class="text-sm font-medium text-slate-700 dark:text-slate-300">
         <label for="schedule-owner">{{ t('schedule.owner') }}</label>
         <PersonSelect id="schedule-owner" v-model="form.user_id" :people="options.people"
           :none="{ label: t('schedule.ownerMe'), name: me?.name ?? t('schedule.ownerMe'), avatar_url: me?.avatar_url }"
@@ -229,6 +229,10 @@ const bookableTypes = computed(() => (options.value?.types ?? []).filter((option
 
 const type = computed(() => options.value?.types.find((option) => option.id === form.schedule_type_id) ?? null)
 
+// the owner, as the API allows it: create_any_schedule on a new one (book_for_others),
+// update_any_schedule to hand one over (hand_over)
+const choosesOwner = computed(() => !!(isEdit.value ? options.value?.can.hand_over : options.value?.can.book_for_others))
+
 // "all day" (no hours): on types that allow it, for people allowed to give no hours; an
 // all-day schedule opened by someone else keeps the switch, so it can be turned off
 const openedAllDay = ref(false)
@@ -333,7 +337,7 @@ async function load() {
       form.end = schedule.all_day ? toInputDate(schedule.end) : toInputDateTime(schedule.end)
       form.description = schedule.description ?? ''
       form.internal_note = schedule.internal_note ?? ''
-      form.user_id = formOptions.can.book_for_others ? schedule.user_id : null
+      form.user_id = formOptions.can.hand_over ? schedule.user_id : null
       form.participants = schedule.schedule_users.map((participant) => participant.user_id)
       notesOpen.value = notesFilled.value
     } else {
@@ -359,7 +363,7 @@ function payload(): ScheduleInput {
     description: form.description.trim() || null,
     schedule_users: form.participants.filter((id) => id !== form.user_id).map((user_id) => ({ user_id })),
   }
-  if (options.value?.can.book_for_others) input.user_id = form.user_id
+  if (choosesOwner.value) input.user_id = form.user_id
   if (options.value?.can.internal_note) input.internal_note = form.internal_note.trim() || null
   return input
 }

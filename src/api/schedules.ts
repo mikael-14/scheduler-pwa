@@ -90,7 +90,7 @@ export interface ScheduleFormOptions {
   people: { id: number; name: string; avatar_url?: string | null }[];
   statuses: { value: ScheduleStatus; label: string }[];
   /** all_day: may book whole-day schedules (no hours), on types that allow them */
-  can: { book_for_others: boolean; past_dates: boolean; internal_note: boolean; all_day: boolean };
+  can: { book_for_others: boolean; hand_over?: boolean; past_dates: boolean; internal_note: boolean; all_day: boolean };
   timezone: string;
 }
 

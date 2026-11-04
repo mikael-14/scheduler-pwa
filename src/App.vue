@@ -13,7 +13,7 @@
         </div>
         <nav class="flex-1 overflow-y-auto p-4 space-y-1">
           <NavItem to="/" icon="HomeIcon">{{ t('nav.home') }}</NavItem>
-          <NavItem to="/calendar" icon="CalendarDaysIcon">{{ t('nav.calendar') }}</NavItem>
+          <NavItem v-if="authStore.can('view_any_schedule')" to="/calendar" icon="CalendarDaysIcon">{{ t('nav.calendar') }}</NavItem>
           <NavItem v-if="authStore.canApprove()" to="/approvals" icon="CheckBadgeIcon" :badge="badges.pendingApprovals">{{ t('nav.approvals') }}</NavItem>
           <NavItem v-if="authStore.can('view_any_schedule_type')" to="/schedule-types" icon="TagIcon">{{ t('nav.scheduleTypes') }}</NavItem>
           <NavItem to="/notifications" icon="BellIcon" :badge="badges.unreadNotifications">{{ t('nav.notifications') }}</NavItem>
@@ -84,7 +84,7 @@
           </div>
           <div class="space-y-1">
             <NavItem to="/" icon="HomeIcon" @click="isMobileMenuOpen = false">{{ t('nav.home') }}</NavItem>
-            <NavItem to="/calendar" icon="CalendarDaysIcon" @click="isMobileMenuOpen = false">{{ t('nav.calendar') }}</NavItem>
+            <NavItem v-if="authStore.can('view_any_schedule')" to="/calendar" icon="CalendarDaysIcon" @click="isMobileMenuOpen = false">{{ t('nav.calendar') }}</NavItem>
             <NavItem v-if="authStore.canApprove()" to="/approvals" icon="CheckBadgeIcon" :badge="badges.pendingApprovals" @click="isMobileMenuOpen = false">{{ t('nav.approvals') }}</NavItem>
             <NavItem v-if="authStore.can('view_any_schedule_type')" to="/schedule-types" icon="TagIcon" @click="isMobileMenuOpen = false">{{ t('nav.scheduleTypes') }}</NavItem>
             <NavItem to="/notifications" icon="BellIcon" :badge="badges.unreadNotifications" @click="isMobileMenuOpen = false">{{ t('nav.notifications') }}</NavItem>
@@ -119,7 +119,7 @@
           <HomeIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">{{ t('nav.home') }}</span>
         </router-link>
-        <router-link to="/calendar" class="flex flex-col items-center gap-1"
+        <router-link v-if="authStore.can('view_any_schedule')" to="/calendar" class="flex flex-col items-center gap-1"
           :class="isActive('/calendar') ? 'text-primary-600 dark:text-primary-500' : 'text-slate-500 dark:text-slate-400'">
           <CalendarDaysIcon class="h-6 w-6" />
           <span class="text-[10px] font-medium">{{ t('nav.calendar') }}</span>
