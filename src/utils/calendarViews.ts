@@ -60,18 +60,3 @@ export function saveCalendarViewSettings(next: { visible: CalendarView[]; initia
     /* ignore */
   }
 }
-
-/** Shows or hides a view; the last visible one can't be hidden, and hiding the opening view moves it. */
-export function toggleCalendarView(name: CalendarView): void {
-  const { visible, initial } = calendarViewSettings.value
-  if (visible.includes(name)) {
-    if (visible.length === 1) return
-    saveCalendarViewSettings({ visible: visible.filter((view) => view !== name), initial })
-  } else {
-    saveCalendarViewSettings({ visible: [...visible, name], initial })
-  }
-}
-
-export function setInitialCalendarView(name: CalendarView): void {
-  saveCalendarViewSettings({ ...calendarViewSettings.value, initial: name })
-}

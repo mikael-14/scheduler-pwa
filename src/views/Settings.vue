@@ -74,11 +74,11 @@
                 </p>
                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('settings.emailNotificationsHelp') }}</p>
               </div>
-              <button type="button" role="switch" :aria-checked="emailEnabled" :disabled="saving"
-                @click="toggleEmail"
-                :class="[emailEnabled ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']"
+              <button type="button" role="switch" :aria-checked="prefs.email_notification" :disabled="saving"
+                @click="prefs.email_notification = !prefs.email_notification"
+                :class="[prefs.email_notification ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']"
                 class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 disabled:opacity-50">
-                <span :class="emailEnabled ? 'translate-x-5' : 'translate-x-0'"
+                <span :class="prefs.email_notification ? 'translate-x-5' : 'translate-x-0'"
                   class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
               </button>
             </div>
@@ -97,11 +97,11 @@
                   <button type="button" @click="showUnblockHelp(dialog)" class="font-semibold underline">{{ t('push.howToUnblock') }}</button>
                 </p>
               </div>
-              <button type="button" role="switch" :aria-checked="pushEnabled" :disabled="saving || !pushIsSupported"
-                @click="togglePush"
-                :class="[pushEnabled ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']"
+              <button type="button" role="switch" :aria-checked="prefs.push_notification" :disabled="saving || !pushIsSupported"
+                @click="prefs.push_notification = !prefs.push_notification"
+                :class="[prefs.push_notification ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']"
                 class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 disabled:opacity-50">
-                <span :class="pushEnabled ? 'translate-x-5' : 'translate-x-0'"
+                <span :class="prefs.push_notification ? 'translate-x-5' : 'translate-x-0'"
                   class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
               </button>
             </div>
@@ -123,7 +123,7 @@
                 </p>
                 <button type="button" role="switch" :aria-checked="option.on" :aria-label="option.label"
                   :disabled="saving || (option.key === 'all_push_notification' && !pushIsSupported)"
-                  @click="option.key === 'all_push_notification' ? toggleAllPush() : toggleAllEmail()"
+                  @click="prefs[option.key] = !prefs[option.key]"
                   :class="[option.on ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']"
                   class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 disabled:opacity-50">
                   <span :class="option.on ? 'translate-x-5' : 'translate-x-0'"
@@ -131,6 +131,15 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <!-- nothing is stored until Save (turning push on asks the browser here) -->
+          <div class="mt-6 flex justify-end border-t border-slate-100 pt-4 dark:border-slate-800">
+            <button type="button" @click="savePreferences" :disabled="saving || !prefsChanged"
+              class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+              <ArrowPathIcon v-if="saving" class="h-4 w-4 animate-spin" />
+              {{ t('settings.save') }}
+            </button>
           </div>
         </div>
       </div>
@@ -155,8 +164,8 @@
               <p class="text-sm text-slate-900 dark:text-white">{{ t(view.label) }}</p>
               <!-- the last visible view can't be turned off -->
               <button type="button" role="switch" :aria-checked="isVisible(view.name)" :aria-label="t(view.label)"
-                :disabled="isVisible(view.name) && viewSettings.visible.length === 1"
-                @click="toggleCalendarView(view.name)"
+                :disabled="isVisible(view.name) && views.visible.length === 1"
+                @click="toggleView(view.name)"
                 :class="[isVisible(view.name) ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']"
                 class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                 <span :class="isVisible(view.name) ? 'translate-x-5' : 'translate-x-0'"
@@ -170,11 +179,17 @@
               <label for="initial-view" class="text-sm font-medium text-slate-900 dark:text-white">{{ t('settings.initialView') }}</label>
               <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('settings.initialViewHelp') }}</p>
             </div>
-            <select id="initial-view" :value="viewSettings.initial"
-              @change="setInitialCalendarView(($event.target as HTMLSelectElement).value as CalendarView)"
+            <select id="initial-view" v-model="views.initial"
               class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:w-56 sm:text-sm">
               <option v-for="view in visibleViews" :key="view.name" :value="view.name">{{ t(view.label) }}</option>
             </select>
+          </div>
+
+          <div class="mt-6 flex justify-end border-t border-slate-100 pt-4 dark:border-slate-800">
+            <button type="button" @click="saveViews" :disabled="!viewsChanged"
+              class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+              {{ t('settings.save') }}
+            </button>
           </div>
         </div>
       </div>
@@ -186,7 +201,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import {
   CloudArrowUpIcon,
   ArrowPathIcon,
@@ -208,7 +223,7 @@ import { useConnectionStore } from '../stores/connection'
 import OfflineNotice from '../components/common/OfflineNotice.vue'
 import { useDialogStore } from '../stores/dialog'
 import { showUnblockHelp } from '../utils/pushHelp'
-import { CALENDAR_VIEWS, calendarViewSettings, setInitialCalendarView, toggleCalendarView, type CalendarView } from '../utils/calendarViews'
+import { CALENDAR_VIEWS, calendarViewSettings, saveCalendarViewSettings, type CalendarView } from '../utils/calendarViews'
 import { PushError, disableDevicePush, enableDevicePush, hasDeviceSubscription, pushSupported } from '../utils/push'
 
 const authStore = useAuthStore()
@@ -222,27 +237,70 @@ const pushDenied = ref(false)
 
 const pushIsSupported = pushSupported()
 
-const emailEnabled = computed(() => !!authStore.user?.email_notification)
-// "On" means: the user wants push AND this device is subscribed
-const pushEnabled = computed(() => !!authStore.user?.push_notification && deviceSubscribed.value)
-// "all notifications" (other people's schedules); push needs this device subscribed too
-const allEmailEnabled = computed(() => !!authStore.user?.all_email_notification)
-const allPushEnabled = computed(() => !!authStore.user?.all_push_notification && deviceSubscribed.value)
+type PreferenceKey = 'email_notification' | 'push_notification' | 'all_email_notification' | 'all_push_notification'
+type Preferences = Record<PreferenceKey, boolean>
+const KEYS: PreferenceKey[] = ['email_notification', 'push_notification', 'all_email_notification', 'all_push_notification']
+
+/** What is saved now. Push "on" means: the user wants it AND this device is subscribed. */
+const savedPreferences = (): Preferences => {
+  const user = authStore.user
+  return {
+    email_notification: !!user?.email_notification,
+    push_notification: !!user?.push_notification && deviceSubscribed.value,
+    all_email_notification: !!user?.all_email_notification,
+    all_push_notification: !!user?.all_push_notification && deviceSubscribed.value,
+  }
+}
+
+/** The form: the toggles only change this; Save stores it. */
+const prefs = reactive<Preferences>(savedPreferences())
+const resetPreferences = () => Object.assign(prefs, savedPreferences())
+const changedPreferences = () => {
+  const saved = savedPreferences()
+  return KEYS.filter((key) => prefs[key] !== saved[key])
+}
+const prefsChanged = computed(() => changedPreferences().length > 0)
+
 const allOptions = computed(() => [
-  { key: 'all_email_notification', label: t('settings.allByEmail'), icon: EnvelopeIcon, on: allEmailEnabled.value },
-  { key: 'all_push_notification', label: t('settings.allByPush'), icon: DevicePhoneMobileIcon, on: allPushEnabled.value },
+  { key: 'all_email_notification' as const, label: t('settings.allByEmail'), icon: EnvelopeIcon, on: prefs.all_email_notification },
+  { key: 'all_push_notification' as const, label: t('settings.allByPush'), icon: DevicePhoneMobileIcon, on: prefs.all_push_notification },
 ])
 
 onMounted(async () => {
   deviceSubscribed.value = await hasDeviceSubscription()
+  resetPreferences()
   pushDenied.value = pushIsSupported && Notification.permission === 'denied'
 })
 
 // ---- agenda views (this device)
 
-const viewSettings = calendarViewSettings
-const isVisible = (name: CalendarView) => viewSettings.value.visible.includes(name)
+/** The form; Save keeps it on this device. */
+const views = reactive({
+  visible: [...calendarViewSettings.value.visible] as CalendarView[],
+  initial: calendarViewSettings.value.initial as CalendarView,
+})
+const isVisible = (name: CalendarView) => views.visible.includes(name)
 const visibleViews = computed(() => CALENDAR_VIEWS.filter((view) => isVisible(view.name)))
+const viewsChanged = computed(() =>
+  views.initial !== calendarViewSettings.value.initial
+  || views.visible.length !== calendarViewSettings.value.visible.length
+  || views.visible.some((view) => !calendarViewSettings.value.visible.includes(view)))
+
+/** The last visible view can't be hidden; hiding the opening view opens on the first one left. */
+const toggleView = (name: CalendarView) => {
+  if (isVisible(name)) {
+    if (views.visible.length === 1) return
+    views.visible = views.visible.filter((view) => view !== name)
+    if (views.initial === name) views.initial = visibleViews.value[0].name
+  } else {
+    views.visible = CALENDAR_VIEWS.map((view) => view.name).filter((view) => view === name || views.visible.includes(view))
+  }
+}
+
+const saveViews = () => {
+  saveCalendarViewSettings({ visible: [...views.visible], initial: views.initial })
+  toastStore.addToast(t('settings.viewsSaved'), 'success', 2500)
+}
 
 // ---- offline copy
 
@@ -279,46 +337,31 @@ const handleSync = async () => {
 
 onMounted(loadOfflineStatus)
 
-type Preferences = {
-  email_notification?: boolean; push_notification?: boolean
-  all_email_notification?: boolean; all_push_notification?: boolean
-}
-
-const save = async (preferences: Preferences) => {
-  await authApi.updateProfile(preferences)
-  toastStore.addToast(t('settings.preferencesSaved'), 'success', 2500)
-}
-
-const toggleAllEmail = async () => {
-  saving.value = true
-  try {
-    await save({ all_email_notification: !allEmailEnabled.value })
-  } catch (error) {
-    toastStore.addToast(apiErrorMessage(error, t('settings.preferencesFailed')), 'error')
-  } finally {
-    saving.value = false
-  }
-}
-
 /**
- * Push of either kind needs this device subscribed: turning one on subscribes it, and it is
- * only unsubscribed when both are off.
+ * Stores what changed in one request. Push of either kind needs this device subscribed: wanting
+ * one subscribes it first (the browser may ask), and it is unsubscribed when both are off.
  */
-const setPush = async (field: 'push_notification' | 'all_push_notification', on: boolean) => {
+const savePreferences = async () => {
+  const changed = changedPreferences()
+  if (!changed.length) return
+
+  const wantsPush = prefs.push_notification || prefs.all_push_notification
   saving.value = true
   try {
-    if (on) {
-      if (!deviceSubscribed.value) await enableDevicePush()
+    if (wantsPush && !deviceSubscribed.value) {
+      await enableDevicePush()
       deviceSubscribed.value = true
-      await save({ [field]: true })
-    } else {
-      const other = field === 'push_notification' ? 'all_push_notification' : 'push_notification'
-      if (!authStore.user?.[other]) {
-        await disableDevicePush()
-        deviceSubscribed.value = false
-      }
-      await save({ [field]: false })
     }
+
+    // only what changed: a push toggle shown off because this device isn't subscribed stays as it is
+    await authApi.updateProfile(Object.fromEntries(changed.map((key) => [key, prefs[key]])) as Partial<Preferences>)
+
+    if (!wantsPush && deviceSubscribed.value) {
+      await disableDevicePush()
+      deviceSubscribed.value = false
+    }
+    resetPreferences()
+    toastStore.addToast(t('settings.preferencesSaved'), 'success', 2500)
   } catch (error) {
     if (error instanceof PushError && error.reason === 'denied') {
       // blocked in the browser: it will not ask again, so explain where to allow it
@@ -334,19 +377,4 @@ const setPush = async (field: 'push_notification' | 'all_push_notification', on:
     pushDenied.value = pushIsSupported && Notification.permission === 'denied'
   }
 }
-
-const toggleAllPush = () => setPush('all_push_notification', !allPushEnabled.value)
-
-const toggleEmail = async () => {
-  saving.value = true
-  try {
-    await save({ email_notification: !emailEnabled.value })
-  } catch (error) {
-    toastStore.addToast(apiErrorMessage(error, t('settings.preferencesFailed')), 'error')
-  } finally {
-    saving.value = false
-  }
-}
-
-const togglePush = () => setPush('push_notification', !pushEnabled.value)
 </script>
