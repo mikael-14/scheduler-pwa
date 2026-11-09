@@ -10,7 +10,8 @@ import { formatServerDateTime, toInputDate, toInputDateTime } from './datetime'
  * - start / end:  when schedules of the type may exist → the pickers' first and last date;
  * - all_day:      whether "all day" is offered;
  * - range:        whether an end time is asked for;
- * - min_time / max_time: only which hours the calendar shows. Never a reason to refuse.
+ * - min_time / max_time: the daily hours, start at min_time or later and end by max_time
+ *                (see hoursProblem); also the hours the calendar shows.
  */
 
 /** First and last value the form's date pickers accept, as input values. */
@@ -38,6 +39,37 @@ export function rulesSummary(type: ScheduleTypeOption | null): string {
   if (type.start) parts.push(t('schedule.rulesFrom', { date: when(type.start) }))
   if (type.end) parts.push(t('schedule.rulesUntil', { date: when(type.end) }))
   return parts.join(' · ')
+}
+
+/**
+ * The type's daily hours (min_time / max_time), as the API checks them: a schedule with hours
+ * starts at min_time or later and ends by max_time (24:00 = midnight). `start` / `end` are the
+ * form's "YYYY-MM-DDTHH:mm" values. Null when it fits (or has no hours).
+ */
+export function hoursProblem(
+  type: ScheduleTypeOption | null,
+  start: string,
+  end: string,
+  allDay: boolean,
+): { field: 'start' | 'end'; message: string } | null {
+  const min = type?.min_time || null
+  const max = type?.max_time || null
+  if (!type || allDay || !start || (!min && !max)) return null
+
+  const last = end || start
+  const startClock = start.slice(11, 16)
+  // an end at midnight of a later day: 24:00
+  const lastClock = last.slice(11, 16) === '00:00' && last > start ? '24:00' : last.slice(11, 16)
+
+  const message = min && max
+    ? t('schedule.hoursBetween', { type: type.name, from: min, to: max })
+    : min
+      ? t('schedule.hoursFrom', { type: type.name, from: min })
+      : t('schedule.hoursUntil', { type: type.name, to: max! })
+
+  if (min && startClock < min) return { field: 'start', message }
+  if (max && (startClock >= max || lastClock > max)) return { field: end ? 'end' : 'start', message }
+  return null
 }
 
 /** A sensible time to start with when only a day was picked: when the type's calendar starts. */

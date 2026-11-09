@@ -60,13 +60,13 @@
             {{ t('schedule.start') }}
             <input v-model="form.start" :type="form.all_day ? 'date' : 'datetime-local'" step="300" required
               :min="limits.min" :max="limits.max" :class="inputClass" />
-            <FieldError :errors="errors.start" />
+            <FieldError :errors="fieldErrors('start')" />
           </label>
           <label v-if="type.range" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             {{ t('schedule.end') }}
             <input v-model="form.end" :type="form.all_day ? 'date' : 'datetime-local'" step="300" required
               :min="form.start || limits.min" :max="limits.max" :class="inputClass" />
-            <FieldError :errors="errors.end" />
+            <FieldError :errors="fieldErrors('end')" />
           </label>
           <div v-if="allDayOffered" class="text-sm font-medium text-slate-700 dark:text-slate-300">
             <span id="all-day-label">{{ t('schedule.allDay') }}</span>
@@ -183,7 +183,7 @@ import { t } from '../i18n'
 import { schedulesApi, type ScheduleFormOptions, type ScheduleInput } from '../api/schedules'
 import { apiErrorMessage } from '../utils/apiError'
 import { toApiDateTime, toInputDate, toInputDateTime } from '../utils/datetime'
-import { defaultStartTime, inputLimits, rulesSummary } from '../utils/scheduleRules'
+import { defaultStartTime, hoursProblem, inputLimits, rulesSummary } from '../utils/scheduleRules'
 import { useToastStore } from '../stores/toast'
 import { useConnectionStore } from '../stores/connection'
 import { useAuthStore } from '../stores/auth'
@@ -239,8 +239,21 @@ const openedAllDay = ref(false)
 const allDayOffered = computed(() => !!type.value?.all_day && (!!options.value?.can.all_day || openedAllDay.value))
 
 // The type's rules (utils/scheduleRules, the same the API enforces): when it may be booked,
-// whether it needs an end; its hours only shape the calendar, so they are not shown as a rule
+// whether it needs an end. Its daily hours are only mentioned when a time falls outside them.
 const typeRules = computed(() => rulesSummary(type.value))
+
+/** The chosen times against the type's daily hours, as the API checks them (null = fine). */
+const hoursIssue = computed(() => hoursProblem(type.value, form.start, form.end, form.all_day))
+
+// a changed time drops the old messages about the times (the hours one follows the times live)
+watch(() => [form.start, form.end, form.all_day, form.schedule_type_id], () => {
+  delete errors.value.start
+  delete errors.value.end
+})
+
+/** A field's errors: the server's or the form's, else the hours message as soon as a time is outside. */
+const fieldErrors = (field: 'start' | 'end') =>
+  errors.value[field]?.length ? errors.value[field] : hoursIssue.value?.field === field ? [hoursIssue.value.message] : undefined
 
 /** The browser pickers stop at the type's dates, and at today without the "past dates" permission. */
 const limits = computed(() => inputLimits(type.value, form.all_day, !!options.value?.can.past_dates))
@@ -374,6 +387,7 @@ function localErrors(): Record<string, string[]> {
   if (!form.start) found.start = [t('schedule.required')]
   if (type.value?.range && !form.end) found.end = [t('schedule.required')]
   if (form.start && form.end && form.end < form.start) found.end = [t('schedule.endBeforeStart')]
+  else if (hoursIssue.value) found[hoursIssue.value.field] ??= [hoursIssue.value.message]
   return found
 }
 
