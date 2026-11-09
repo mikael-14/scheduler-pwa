@@ -106,7 +106,7 @@
             <span class="w-24 shrink-0 text-xs text-slate-500 dark:text-slate-400">{{ shortWhen(item) }}</span>
             <span class="h-6 w-1 shrink-0 rounded-full" :style="{ backgroundColor: item.schedule_type?.color || '#94a3b8' }"></span>
             <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-900 dark:text-white">{{ item.schedule_type?.name }}</span>
-            <StatusBadge :status="item.status" compact />
+            <StatusBadge :status="cancelledByMe(item) ? 'cancelled' : item.status" compact />
           </router-link>
         </li>
       </ul>
@@ -220,7 +220,9 @@ const upcoming = (list: Schedule[]) => list
   .sort((a, b) => a.start.localeCompare(b.start))
 
 const myUpcoming = computed(() => upcoming(mine.value))
-const next = computed(() => myUpcoming.value[0] ?? null)
+/** I cancelled my attendance: listed as cancelled (so I can join again), never my "next". */
+const cancelledByMe = (schedule: Schedule) => !!schedule.cancelled_users?.some((person) => person.user_id === authStore.user?.id)
+const next = computed(() => myUpcoming.value.find((schedule) => !cancelledByMe(schedule)) ?? null)
 
 const twoWeeks = computed(() => {
   const saved = currentWindow(new Date(now.value))

@@ -30,6 +30,8 @@ export interface Schedule {
   schedule_type: { id: number; name: string; color: string | null; all_day: boolean; range: boolean } | null;
   user: { id: number; name: string; avatar_url?: string | null } | null;
   schedule_users: ScheduleParticipant[];
+  /** who cancelled their attendance (or was taken off): shown as cancelled, never counted */
+  cancelled_users?: { id: number; user_id: number; name?: string | null; avatar_url?: string | null; cancelled_at?: string | null }[];
   /** what the signed-in user may do with it */
   can: {
     /** cancel: its creator, before it starts (there is no delete outside the admin panel) */

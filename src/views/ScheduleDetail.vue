@@ -26,6 +26,9 @@
           </div>
           <StatusBadge :status="schedule.status" />
         </header>
+        <p v-if="iCancelled" class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+          {{ t('schedule.youCancelled') }}
+        </p>
 
         <dl class="grid gap-4 sm:grid-cols-2">
           <div>
@@ -51,6 +54,17 @@
                 </button>
               </span>
               <span v-if="!schedule.schedule_users.length" class="text-sm text-slate-500">—</span>
+            </dd>
+          </div>
+          <!-- who cancelled their attendance: shown, greyed out, never counted -->
+          <div v-if="schedule.cancelled_users?.length">
+            <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('schedule.cancelledParticipants') }}</dt>
+            <dd class="mt-1 flex flex-wrap gap-1.5">
+              <span v-for="person in schedule.cancelled_users" :key="person.user_id"
+                class="inline-flex items-center gap-1.5 rounded-full bg-slate-50 py-0.5 pl-0.5 pr-2 text-xs text-slate-400 line-through opacity-75 dark:bg-slate-800/50 dark:text-slate-500">
+                <UserAvatar :name="person.name ?? '?'" :src="person.avatar_url" size="h-5 w-5" class="grayscale" />
+                {{ person.name ?? '?' }}
+              </span>
             </dd>
           </div>
           <div v-if="schedule.description" class="sm:col-span-2">
@@ -83,7 +97,7 @@
           </button>
           <button v-if="schedule.can.join" type="button" @click="join"
             class="rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
-            {{ t('schedule.join') }}
+            {{ iCancelled ? t('schedule.joinAgain') : t('schedule.join') }}
           </button>
           <button v-if="schedule.can.update" type="button" @click="router.push({ name: 'ScheduleEdit', params: { id: schedule.id } })"
             class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
@@ -117,6 +131,7 @@ import { formatPeriod } from '../utils/datetime'
 import { useToastStore } from '../stores/toast'
 import { useDialogStore } from '../stores/dialog'
 import { useConnectionStore } from '../stores/connection'
+import { useAuthStore } from '../stores/auth'
 import StatusBadge from '../components/common/StatusBadge.vue'
 import ApprovalProblem from '../components/common/ApprovalProblem.vue'
 import UserAvatar from '../components/common/UserAvatar.vue'
@@ -141,6 +156,9 @@ const hasActions = computed(() => {
   return can.update || can.cancel || can.not_shown || can.approve || can.join || can.leave
 })
 const online = computed(() => !schedule.value?.offline && connection.status !== 'offline')
+// the signed-in user cancelled their attendance (they can join again before it starts)
+const authStore = useAuthStore()
+const iCancelled = computed(() => !!schedule.value?.cancelled_users?.some(p => p.user_id === authStore.user?.id))
 
 const load = async () => {
   loading.value = true
@@ -242,10 +260,10 @@ const decide = (action: 'approve' | 'reject') => {
 }
 
 const join = () => dialog.confirm({
-  title: t('schedule.joinTitle'),
+  title: iCancelled.value ? t('schedule.joinAgainTitle') : t('schedule.joinTitle'),
   message: t('schedule.joinBody'),
   tone: 'info',
-  confirmLabel: t('schedule.join'),
+  confirmLabel: iCancelled.value ? t('schedule.joinAgain') : t('schedule.join'),
   onConfirm: async () => {
     try {
       schedule.value = await schedulesApi.join(schedule.value!.id)
