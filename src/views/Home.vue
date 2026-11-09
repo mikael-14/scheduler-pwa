@@ -88,7 +88,7 @@
         <span :class="sectionTitle">{{ t('dashboard.shelterThisWeek') }}</span>
         <dl class="mt-2 grid grid-cols-3 gap-2 text-center">
           <div><dt class="text-xs text-slate-500">{{ t('dashboard.total') }}</dt><dd class="text-2xl font-bold">{{ weekSummary.total }}</dd></div>
-          <div><dt class="text-xs text-slate-500">{{ t('status.approved') }}</dt><dd class="text-2xl font-bold text-emerald-600">{{ weekSummary.approved }}</dd></div>
+          <div><dt class="text-xs text-slate-500">{{ t('status.approved') }}</dt><dd class="text-2xl font-bold text-success-600">{{ weekSummary.approved }}</dd></div>
           <div><dt class="text-xs text-slate-500">{{ t('status.pending') }}</dt><dd class="text-2xl font-bold text-amber-600">{{ weekSummary.pending }}</dd></div>
         </dl>
       </div>

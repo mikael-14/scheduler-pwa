@@ -29,6 +29,14 @@
         <p v-if="iCancelled" class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
           {{ t('schedule.youCancelled') }}
         </p>
+        <!-- waiting for someone who may go alone (an Experiente): for everyone; who can go is asked to join -->
+        <div v-if="schedule.needs_independent" class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          <ExclamationTriangleIcon class="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p class="font-semibold">{{ t('schedule.needsIndependent') }}</p>
+            <p class="mt-0.5">{{ authStore.can('independent_schedule') ? t('schedule.needsIndependentJoin') : t('schedule.needsIndependentHelp') }}</p>
+          </div>
+        </div>
 
         <dl class="grid gap-4 sm:grid-cols-2">
           <div>
@@ -84,11 +92,14 @@
         <!-- only the actions the API says this user may do -->
         <div v-if="hasActions" class="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-5 dark:border-slate-800">
           <button v-if="schedule.can.not_shown" type="button" @click="notShown"
-            class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+            class="inline-flex items-center gap-1.5 rounded-lg border border-info-300 px-3 py-2 text-sm font-medium text-info-700 hover:bg-info-50 dark:border-info-800 dark:text-info-400 dark:hover:bg-info-950">
+            <EyeSlashIcon class="h-4 w-4" aria-hidden="true" />
             {{ t('schedule.markNotShown') }}
           </button>
+          <!-- cancel / reject / approve: the admin panel's status colours and icons (utils/statusStyle) -->
           <button v-if="schedule.can.cancel" type="button" @click="cancel"
-            class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+            :class="['inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium', ACTION_BUTTON.cancel]">
+            <MinusCircleIcon class="h-4 w-4" aria-hidden="true" />
             {{ t('schedule.cancelSchedule') }}
           </button>
           <button v-if="schedule.can.leave" type="button" @click="leave"
@@ -105,12 +116,14 @@
           </button>
           <template v-if="schedule.can.approve">
             <button type="button" @click="decide('reject')"
-              class="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950">
+              :class="['inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold', ACTION_BUTTON.reject]">
+              <XCircleIcon class="h-4 w-4" aria-hidden="true" />
               {{ t('approvals.reject') }}
             </button>
             <button type="button" @click="decide('approve')" :disabled="!!schedule.approval_problem"
               :title="schedule.approval_problem ?? undefined"
-              class="rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-50">
+              :class="['inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50', ACTION_BUTTON.approve]">
+              <CheckCircleIcon class="h-4 w-4" aria-hidden="true" />
               {{ t('approvals.approve') }}
             </button>
           </template>
@@ -123,7 +136,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ChevronLeftIcon, EyeSlashIcon } from '@heroicons/vue/20/solid'
+import { CheckCircleIcon, ChevronLeftIcon, ExclamationTriangleIcon, EyeSlashIcon, MinusCircleIcon, XCircleIcon } from '@heroicons/vue/20/solid'
+import { ACTION_BUTTON } from '../utils/statusStyle'
 import { t } from '../i18n'
 import { schedulesApi, type Schedule, type ScheduleParticipant } from '../api/schedules'
 import { apiErrorMessage, isNetworkError } from '../utils/apiError'

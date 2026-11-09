@@ -11,7 +11,8 @@ export default {
     extend: {
       colors: {
         // Filament's standard color naming schema
-        danger: colors.rose,
+        // as the admin panel (Filament's defaults): danger red, success green, warning amber, info blue
+        danger: colors.red,
         primary: {
           50: 'oklch(0.979 0.021 166.113 / <alpha-value>)',
           100: 'oklch(0.95 0.052 163.051 / <alpha-value>)',
@@ -25,9 +26,9 @@ export default {
           900: 'oklch(0.378 0.077 168.94 / <alpha-value>)',
           950: 'oklch(0.262 0.051 172.552 / <alpha-value>)'
         },
-        success: colors.emerald,
+        success: colors.green,
         warning: colors.amber,
-        info: colors.sky,
+        info: colors.blue,
         gray: colors.slate, // Filament v4/v5 moved from 'gray' to the crisper 'slate'
       },
       fontFamily: {

@@ -1,11 +1,11 @@
+// a schedule's status as its background on the calendar, in the admin panel's colours (ScheduleStatus enum)
 const STATUS_EVENT_CLASSES: Record<string, string> = {
-  pending: '!bg-amber-50 !text-amber-700 !border !border-amber-200 dark:!bg-amber-500/10 dark:!text-amber-400 dark:!border-amber-500/20',
-  approved: '!bg-emerald-50 !text-emerald-700 !border !border-emerald-200 dark:!bg-emerald-500/10 dark:!text-emerald-400 dark:!border-emerald-500/20',
-  rejected: '!bg-rose-50 !text-rose-700 !border !border-rose-200 dark:!bg-rose-500/10 dark:!text-rose-400 dark:!border-rose-500/20',
-  cancelled: '!bg-rose-50 !text-rose-700 !border !border-rose-200 dark:!bg-rose-500/10 dark:!text-rose-400 dark:!border-rose-500/20',
+  pending: '!bg-warning-50 !text-warning-700 !border !border-warning-200 dark:!bg-warning-500/10 dark:!text-warning-400 dark:!border-warning-500/20',
+  approved: '!bg-success-50 !text-success-700 !border !border-success-200 dark:!bg-success-500/10 dark:!text-success-400 dark:!border-success-500/20',
+  rejected: '!bg-danger-50 !text-danger-700 !border !border-danger-200 dark:!bg-danger-500/10 dark:!text-danger-400 dark:!border-danger-500/20',
+  cancelled: '!bg-danger-50 !text-danger-700 !border !border-danger-200 dark:!bg-danger-500/10 dark:!text-danger-400 dark:!border-danger-500/20',
   completed: '!bg-primary-50 !text-primary-700 !border !border-primary-200 dark:!bg-primary-500/10 dark:!text-primary-400 dark:!border-primary-500/20',
-  notshown: '!bg-sky-50 !text-sky-700 !border !border-sky-200 dark:!bg-sky-500/10 dark:!text-sky-400 dark:!border-sky-500/20',
-  not_shown: '!bg-sky-50 !text-sky-700 !border !border-sky-200 dark:!bg-sky-500/10 dark:!text-sky-400 dark:!border-sky-500/20',
+  not_shown: '!bg-info-50 !text-info-700 !border !border-info-200 dark:!bg-info-500/10 dark:!text-info-400 dark:!border-info-500/20',
 }
 
 export const getEventStatusClass = (status: string | undefined): string => {

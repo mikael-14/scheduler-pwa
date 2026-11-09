@@ -43,6 +43,8 @@ export interface Schedule {
   };
   /** approvers, pending primary schedules: why it cannot be approved yet (null = it can) */
   approval_problem?: string | null;
+  /** pending primary schedule waiting for someone who may go alone (an Experiente) to join */
+  needs_independent?: boolean;
   /** set when it comes from the copy saved on the device (no connection) */
   offline?: boolean;
 }
@@ -118,6 +120,8 @@ export interface PendingSchedule {
   participant_people?: SchedulePerson[];
   /** primary type: why it cannot be approved yet (null = it can) */
   approval_problem?: string | null;
+  /** the approver's own schedule, not started yet: they may cancel it from the list */
+  can_cancel?: boolean;
 }
 
 export interface ScheduleFilters {

@@ -19,8 +19,11 @@
     </p>
 
     <ul v-if="items.length" class="space-y-3">
+      <!-- a tap on the card opens the schedule (everything else is done there); the buttons only decide -->
       <li v-for="item in items" :key="item.id"
-        class="page-card border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        :role="canViewDetails ? 'link' : undefined" :tabindex="canViewDetails ? 0 : undefined"
+        @click="open(item)" @keydown.enter.self="open(item)"
+        :class="['page-card border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900', canViewDetails ? 'cursor-pointer transition hover:border-slate-300 dark:hover:border-slate-700' : '']">
         <div class="flex items-start gap-3">
           <!-- the owner's photo, with the type's colour on its corner -->
           <span class="relative shrink-0">
@@ -34,7 +37,6 @@
               <span class="font-normal text-slate-500 dark:text-slate-400">· {{ item.schedule_type?.name }}</span>
             </p>
             <p class="text-sm text-slate-600 dark:text-slate-300">{{ period(item) }}</p>
-            <router-link v-if="canViewDetails" :to="{ name: 'ScheduleDetail', params: { id: item.id } }" class="text-xs font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ t('approvals.details') }}</router-link>
             <div v-if="item.participant_people?.length" class="mt-2 flex flex-wrap items-center gap-1.5">
               <span class="text-xs text-slate-500 dark:text-slate-400">{{ t('approvals.participants') }}:</span>
               <span v-for="person in item.participant_people" :key="person.id"
@@ -52,14 +54,23 @@
           </div>
         </div>
 
-        <div class="mt-4 flex justify-end gap-2">
-          <button type="button" @click="openDialog(item, 'reject')" :disabled="offline" :title="offline ? t('offline.needsConnection') : undefined"
-            class="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950">
+        <!-- as the admin panel's statuses: approve green ✓, reject red ✕, cancel red ⊖ (only their own) -->
+        <div class="mt-4 flex flex-wrap justify-end gap-2">
+          <button v-if="item.can_cancel" type="button" @click.stop="confirmCancel(item)" :disabled="offline"
+            :title="offline ? t('offline.needsConnection') : undefined"
+            :class="['inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition disabled:opacity-50', ACTION_BUTTON.cancel]">
+            <MinusCircleIcon class="h-4 w-4" aria-hidden="true" />
+            {{ t('schedule.cancelSchedule') }}
+          </button>
+          <button type="button" @click.stop="openDialog(item, 'reject')" :disabled="offline" :title="offline ? t('offline.needsConnection') : undefined"
+            :class="['inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition disabled:opacity-50', ACTION_BUTTON.reject]">
+            <XCircleIcon class="h-4 w-4" aria-hidden="true" />
             {{ t('approvals.reject') }}
           </button>
-          <button type="button" @click="openDialog(item, 'approve')" :disabled="offline || !!item.approval_problem"
+          <button type="button" @click.stop="openDialog(item, 'approve')" :disabled="offline || !!item.approval_problem"
             :title="offline ? t('offline.needsConnection') : item.approval_problem ?? undefined"
-            class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 disabled:opacity-50">
+            :class="['inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition disabled:opacity-50', ACTION_BUTTON.approve]">
+            <CheckCircleIcon class="h-4 w-4" aria-hidden="true" />
             {{ t('approvals.approve') }}
           </button>
         </div>
@@ -71,6 +82,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { CheckCircleIcon, MinusCircleIcon, XCircleIcon } from '@heroicons/vue/20/solid'
 import { t } from '../i18n'
 import { schedulesApi, type PendingSchedule } from '../api/schedules'
 import { apiErrorMessage, isNetworkError } from '../utils/apiError'
@@ -82,7 +95,9 @@ import { useConnectionStore } from '../stores/connection'
 import { formatPeriod } from '../utils/datetime'
 import ApprovalProblem from '../components/common/ApprovalProblem.vue'
 import UserAvatar from '../components/common/UserAvatar.vue'
+import { ACTION_BUTTON } from '../utils/statusStyle'
 
+const router = useRouter()
 const toast = useToastStore()
 const dialog = useDialogStore()
 const badges = useBadgesStore()
@@ -139,6 +154,29 @@ const openDialog = (item: PendingSchedule, action: 'approve' | 'reject') => {
     },
   })
 }
+
+const open = (item: PendingSchedule) => {
+  if (canViewDetails) router.push({ name: 'ScheduleDetail', params: { id: item.id } })
+}
+
+/** The approver's own schedule: cancel it from here, as from its page (no message is kept). */
+const confirmCancel = (item: PendingSchedule) => dialog.confirm({
+  title: t('schedule.cancelTitle'),
+  message: `${item.schedule_type?.name ?? ''} · ${period(item)}`,
+  tone: 'danger',
+  confirmLabel: t('schedule.cancelSchedule'),
+  cancelLabel: t('schedule.keep'),
+  onConfirm: async () => {
+    try {
+      await schedulesApi.cancelSchedule(item.id)
+      toast.success(t('schedule.cancelled'))
+    } catch (e) {
+      toast.error(apiErrorMessage(e, t('schedule.saveFailed')))
+      if (isNetworkError(e)) throw e // keep the dialog open to retry
+    }
+    await load()
+  },
+})
 
 onMounted(load)
 </script>

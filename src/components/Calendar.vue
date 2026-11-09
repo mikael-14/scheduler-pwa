@@ -225,7 +225,9 @@ function toCalendarEvent(schedule: Schedule) {
 
   return {
     id: String(schedule.id),
-    title: [schedule.schedule_type?.name ?? t('calendar.scheduledEvent'), schedule.user?.name].filter(Boolean).join(' · '),
+    // ⚠️ waiting for an experienced volunteer to join
+    title: (schedule.needs_independent ? '⚠️ ' : '')
+      + [schedule.schedule_type?.name ?? t('calendar.scheduledEvent'), schedule.user?.name].filter(Boolean).join(' · '),
     start: schedule.start,
     end: end ?? undefined,
     allDay: schedule.all_day,
@@ -457,10 +459,16 @@ const openSchedule = (id: string) => {
 
 const handleEventClick = (info: any) => openSchedule(info.event.id)
 
-// The type's colour as a stripe on the left of each schedule
+// The type's colour as a little dot before the title (the background is the status), as in the form
 const handleEventDidMount = (info: any) => {
   const color = info.event.extendedProps?.typeColor
-  if (color) info.el.style.borderLeft = `4px solid ${color}`
+  const title = info.el.querySelector('.fc-list-event-title a') || info.el.querySelector('.fc-event-title')
+  if (!color || !title || title.querySelector('.schedule-type-dot')) return
+
+  const dot = document.createElement('span')
+  dot.className = 'schedule-type-dot'
+  dot.style.backgroundColor = color
+  title.prepend(dot)
 }
 </script>
 
@@ -524,6 +532,11 @@ const handleEventDidMount = (info: any) => {
 
 .fc-event-title {
   @apply text-[10px] font-bold leading-tight sm:text-xs !important;
+}
+
+/* the type's colour before the title; a white ring keeps it visible on any status colour */
+.schedule-type-dot {
+  @apply mr-1 inline-block h-2 w-2 shrink-0 rounded-full align-middle ring-[1.5px] ring-white/90 sm:h-2.5 sm:w-2.5;
 }
 .fc-timegrid-now-indicator-line {
   @apply border-primary-500 !important;
