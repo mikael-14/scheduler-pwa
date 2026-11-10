@@ -181,6 +181,7 @@ const rules = (type: ScheduleType) => {
   const parts = [
     type.range ? t('scheduleTypes.needsEnd') : null,
     type.all_day ? t('scheduleTypes.allDay') : null,
+    type.uses_slots ? t('scheduleTypes.usesSlotsShort') : null,
   ].filter(Boolean)
   return parts.length ? parts.join(' · ') : '—'
 }

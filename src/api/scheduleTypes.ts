@@ -22,7 +22,37 @@ export interface ScheduleType {
   max_time: string | null;
   /** active schedules of the type (a type with any can't be deleted) */
   schedules_count: number;
+  /** shifts: schedules of the type are booked on one of its slots */
+  uses_slots: boolean;
+  /** only with a single type (get, create, update), not with the list */
+  slots?: ScheduleTypeSlot[];
   can: { update: boolean; delete: boolean };
+}
+
+/** A slot of a type as it is defined: a day and two times in server time ("HH:mm", "00:00" = midnight). */
+export interface ScheduleTypeSlot {
+  id: number;
+  day: string;
+  from: string;
+  to: string;
+  start: string;
+  end: string;
+  /** null = no limit */
+  capacity: number | null;
+  comment: string | null;
+  people: number;
+  /** a schedule is on it: its times are fixed and it can't be removed */
+  taken: boolean;
+}
+
+/** A slot as sent: without an id it is new; a slot left out of the list is removed. */
+export interface ScheduleTypeSlotInput {
+  id?: number;
+  day: string;
+  from: string;
+  to: string;
+  capacity: number | null;
+  comment: string | null;
 }
 
 /** What is sent to create or change a type. Dates are "YYYY-MM-DD HH:mm" in server time. */
@@ -37,6 +67,9 @@ export interface ScheduleTypeInput {
   end: string | null;
   min_time: string | null;
   max_time: string | null;
+  uses_slots: boolean;
+  /** the whole list (left out: the slots stay as they are) */
+  slots?: ScheduleTypeSlotInput[];
 }
 
 const base = (panel: string) => `/${panel}/schedule-types`;
