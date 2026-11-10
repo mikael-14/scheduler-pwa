@@ -83,6 +83,21 @@
               </button>
             </div>
 
+            <!-- the emails that can wait: one by one, or in a summary (decisions about you always come at once) -->
+            <div v-if="prefs.email_notification || prefs.all_email_notification"
+              class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div>
+                <label for="email-digest" class="text-sm font-medium text-slate-900 dark:text-white">{{ t('settings.emailDigest') }}</label>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('settings.emailDigestHelp') }}</p>
+              </div>
+              <select id="email-digest" v-model="prefs.email_digest" :disabled="saving"
+                class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:w-64 sm:text-sm">
+                <option value="twice">{{ t('settings.digestTwice') }}</option>
+                <option value="daily">{{ t('settings.digestDaily') }}</option>
+                <option value="instant">{{ t('settings.digestInstant') }}</option>
+              </select>
+            </div>
+
             <!-- Push -->
             <div class="flex items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
               <div>
@@ -215,6 +230,7 @@ import { intlLocale, t } from '../i18n'
 import { APP_VERSION } from '../utils/appVersion'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../stores/auth'
+import type { EmailDigest } from '../types/auth'
 import { useToastStore } from '../stores/toast'
 import { apiErrorMessage } from '../utils/apiError'
 import InstallButton from '../components/common/InstallButton.vue'
@@ -237,9 +253,10 @@ const pushDenied = ref(false)
 
 const pushIsSupported = pushSupported()
 
-type PreferenceKey = 'email_notification' | 'push_notification' | 'all_email_notification' | 'all_push_notification'
-type Preferences = Record<PreferenceKey, boolean>
-const KEYS: PreferenceKey[] = ['email_notification', 'push_notification', 'all_email_notification', 'all_push_notification']
+type ToggleKey = 'email_notification' | 'push_notification' | 'all_email_notification' | 'all_push_notification'
+type Preferences = Record<ToggleKey, boolean> & { email_digest: EmailDigest }
+type PreferenceKey = keyof Preferences
+const KEYS: PreferenceKey[] = ['email_notification', 'push_notification', 'all_email_notification', 'all_push_notification', 'email_digest']
 
 /** What is saved now. Push "on" means: the user wants it AND this device is subscribed. */
 const savedPreferences = (): Preferences => {
@@ -249,6 +266,8 @@ const savedPreferences = (): Preferences => {
     push_notification: !!user?.push_notification && deviceSubscribed.value,
     all_email_notification: !!user?.all_email_notification,
     all_push_notification: !!user?.all_push_notification && deviceSubscribed.value,
+    // an older API without it: the server's default
+    email_digest: user?.email_digest ?? 'twice',
   }
 }
 

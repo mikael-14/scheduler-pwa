@@ -1,3 +1,5 @@
+export type EmailDigest = 'instant' | 'twice' | 'daily';
+
 export interface User {
   id: number;
   name: string;
@@ -11,6 +13,8 @@ export interface User {
   /** "all notifications": other people's schedules too */
   all_email_notification?: boolean;
   all_push_notification?: boolean;
+  /** the emails that can wait: each right away, or in a summary twice / once a day */
+  email_digest?: EmailDigest;
   approved_at?: string | null;
   /** false for accounts made with Google / Facebook that never set a password */
   has_password?: boolean;
