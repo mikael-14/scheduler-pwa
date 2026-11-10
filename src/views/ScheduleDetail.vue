@@ -37,6 +37,17 @@
             <p class="mt-0.5">{{ authStore.can('independent_schedule') ? t('schedule.needsIndependentJoin') : t('schedule.needsIndependentHelp') }}</p>
           </div>
         </div>
+        <!-- booked on a slot (shift): how many people it has / takes, and its comment -->
+        <div v-if="schedule.slot" class="flex items-start gap-2 rounded-xl border border-info-200 bg-info-50 p-3 text-sm text-info-800 dark:border-info-500/30 dark:bg-info-500/10 dark:text-info-300">
+          <ClockIcon class="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p class="font-semibold">
+              {{ t('slots.slot') }} · {{ slotPeople(schedule.slot.people, schedule.slot.capacity) }}
+              <span v-if="schedule.slot.capacity !== null && schedule.slot.people >= schedule.slot.capacity"> · {{ t('slots.full') }}</span>
+            </p>
+            <p v-if="schedule.slot.comment" class="mt-0.5 whitespace-pre-line">{{ schedule.slot.comment }}</p>
+          </div>
+        </div>
 
         <dl class="grid gap-4 sm:grid-cols-2">
           <div>
@@ -136,7 +147,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { CheckCircleIcon, ChevronLeftIcon, ExclamationTriangleIcon, EyeSlashIcon, MinusCircleIcon, XCircleIcon } from '@heroicons/vue/20/solid'
+import { CheckCircleIcon, ChevronLeftIcon, ClockIcon, ExclamationTriangleIcon, EyeSlashIcon, MinusCircleIcon, XCircleIcon } from '@heroicons/vue/20/solid'
+import { slotPeople } from '../utils/slots'
 import { ACTION_BUTTON } from '../utils/statusStyle'
 import { t } from '../i18n'
 import { schedulesApi, type Schedule, type ScheduleParticipant } from '../api/schedules'

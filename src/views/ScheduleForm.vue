@@ -50,7 +50,47 @@
         <FieldError :errors="errors.schedule_type_id" />
       </fieldset>
 
-      <template v-if="type">
+      <!-- Slots (shifts): a new schedule of this type is a place on one of its slots -->
+      <fieldset v-if="slotMode">
+        <legend class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('slots.pick') }}</legend>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('slots.pickHelp') }}</p>
+        <p v-if="slotsLoading" class="mt-3 text-sm text-slate-500">{{ t('slots.loading') }}</p>
+        <p v-else-if="slotsError" class="mt-3 text-sm text-red-600 dark:text-red-400">{{ slotsError }}</p>
+        <p v-else-if="!slots.length"
+          class="mt-3 rounded-lg border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500 dark:border-slate-700">
+          {{ t('slots.none') }}
+        </p>
+        <div v-else class="mt-3 space-y-4">
+          <div v-for="group in slotDays" :key="group.day">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ group.label }}</p>
+            <div class="mt-2 grid gap-2 sm:grid-cols-2">
+              <label v-for="slot in group.slots" :key="slot.id" :class="['flex items-start gap-3 rounded-xl border p-3 transition',
+                slot.mine || slot.problem ? 'cursor-default opacity-70' : 'cursor-pointer',
+                selectedSlot === slot.id
+                  ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500 dark:bg-primary-500/10'
+                  : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600']">
+                <input type="radio" class="sr-only" :value="slot.id" v-model="selectedSlot" :disabled="slot.mine || !!slot.problem" />
+                <ClockIcon class="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                <span class="min-w-0 flex-1">
+                  <span class="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                    {{ slotTime(slot) }}
+                    <span :class="['rounded-full px-2 py-0.5 text-[10px] font-medium', slotBadge(slot).class]">{{ slotBadge(slot).label }}</span>
+                  </span>
+                  <span class="block text-xs text-slate-500 dark:text-slate-400">{{ slotPeople(slot.people, slot.capacity) }}</span>
+                  <span v-if="slot.comment" class="mt-1 block whitespace-pre-line text-xs text-slate-600 dark:text-slate-300">{{ slot.comment }}</span>
+                  <router-link v-if="slot.mine && slot.schedule_id" :to="{ name: 'ScheduleDetail', params: { id: slot.schedule_id } }"
+                    class="mt-1 inline-block text-xs font-medium text-primary-600 hover:underline dark:text-primary-400">
+                    {{ t('slots.open') }}
+                  </router-link>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <FieldError :errors="errors.slot" />
+      </fieldset>
+
+      <template v-else-if="type">
         <!-- the type's rules, so nobody has to find out by trial and error -->
         <p v-if="typeRules" class="text-sm font-bold text-slate-600 dark:text-slate-300">{{ typeRules }}</p>
 
@@ -59,13 +99,13 @@
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             {{ t('schedule.start') }}
             <input v-model="form.start" :type="form.all_day ? 'date' : 'datetime-local'" step="300" required
-              :min="limits.min" :max="limits.max" :class="inputClass" />
+              :min="limits.min" :max="limits.max" :class="inputClass" :disabled="timesLocked" />
             <FieldError :errors="fieldErrors('start')" />
           </label>
           <label v-if="type.range" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             {{ t('schedule.end') }}
             <input v-model="form.end" :type="form.all_day ? 'date' : 'datetime-local'" step="300" required
-              :min="form.start || limits.min" :max="limits.max" :class="inputClass" />
+              :min="form.start || limits.min" :max="limits.max" :class="inputClass" :disabled="timesLocked" />
             <FieldError :errors="fieldErrors('end')" />
           </label>
           <div v-if="allDayOffered" class="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -82,7 +122,10 @@
             <FieldError :errors="errors.all_day" />
           </div>
         </div>
+        <p v-if="timesLocked" class="text-xs text-slate-500 dark:text-slate-400">{{ t('slots.timesFixed') }}</p>
       </template>
+
+      <template v-if="!slotMode">
 
       <!-- Owner: for people who may book for others (new) / hand a schedule over (edit) -->
       <div v-if="choosesOwner" class="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -154,6 +197,8 @@
         </div>
       </div>
 
+      </template>
+
       <p v-if="!isEdit" class="text-xs text-slate-500 dark:text-slate-400">
         {{ t('schedule.needsApproval') }}
       </p>
@@ -164,10 +209,10 @@
           class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
           {{ t('common.cancel') }}
         </button>
-        <button type="submit" :disabled="saving || !type || connection.status === 'offline'"
+        <button type="submit" :disabled="saving || !type || connection.status === 'offline' || (slotMode && !selectedSlot)"
           class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 disabled:opacity-60">
           <ArrowPathIcon v-if="saving" class="h-4 w-4 animate-spin" />
-          {{ isEdit ? t('schedule.save') : t('schedule.create') }}
+          {{ isEdit ? t('schedule.save') : slotMode ? t('slots.take') : t('schedule.create') }}
         </button>
       </div>
     </form>
@@ -178,11 +223,12 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronDownIcon, ChevronLeftIcon, XMarkIcon } from '@heroicons/vue/20/solid'
-import { ArrowPathIcon } from '@heroicons/vue/24/outline'
+import { ArrowPathIcon, ClockIcon } from '@heroicons/vue/24/outline'
 import { t } from '../i18n'
-import { schedulesApi, type ScheduleFormOptions, type ScheduleInput } from '../api/schedules'
+import { schedulesApi, type ScheduleFormOptions, type ScheduleInput, type ScheduleSlot } from '../api/schedules'
 import { apiErrorMessage } from '../utils/apiError'
-import { toApiDateTime, toInputDate, toInputDateTime } from '../utils/datetime'
+import { formatServerDateTime, toApiDateTime, toInputDate, toInputDateTime } from '../utils/datetime'
+import { slotPeople } from '../utils/slots'
 import { defaultStartTime, hoursProblem, inputLimits, rulesSummary } from '../utils/scheduleRules'
 import { useToastStore } from '../stores/toast'
 import { useConnectionStore } from '../stores/connection'
@@ -225,9 +271,64 @@ const inputClass = 'mt-1 block w-full rounded-lg border border-slate-300 bg-whit
 // types whose end has passed: only for people who may book the past, or the one this schedule already has
 const originalTypeId = ref<number | null>(null)
 const bookableTypes = computed(() => (options.value?.types ?? []).filter((option) =>
-  !option.ended || options.value?.can.past_dates || option.id === originalTypeId.value))
+  (!option.ended || options.value?.can.past_dates || option.id === originalTypeId.value)
+  // an existing schedule can't move onto a type with slots: those are taken from a new schedule
+  && (!isEdit.value || !option.uses_slots || option.id === originalTypeId.value)))
 
 const type = computed(() => options.value?.types.find((option) => option.id === form.schedule_type_id) ?? null)
+
+// Types with slots (shifts): a new schedule is a place on one of its slots (ScheduleSlots on the API)
+const slotMode = computed(() => !isEdit.value && !!type.value?.uses_slots)
+// a schedule booked on a slot keeps the slot's times
+const timesLocked = computed(() => isEdit.value && !!type.value?.uses_slots)
+const slots = ref<ScheduleSlot[]>([])
+const slotsLoading = ref(false)
+const slotsError = ref<string | null>(null)
+const selectedSlot = ref<number | null>(null)
+
+async function loadSlots() {
+  slots.value = []
+  selectedSlot.value = null
+  slotsError.value = null
+  if (!slotMode.value || !type.value) return
+  const typeId = type.value.id
+  slotsLoading.value = true
+  try {
+    const found = await schedulesApi.fetchSlots(typeId)
+    if (type.value?.id === typeId) slots.value = found
+  } catch (e) {
+    slotsError.value = apiErrorMessage(e, t('slots.loadFailed'))
+  } finally {
+    slotsLoading.value = false
+  }
+}
+watch(slotMode, loadSlots)
+watch(() => form.schedule_type_id, () => { if (slotMode.value) loadSlots() })
+
+const slotDay = (slot: ScheduleSlot) => toInputDate(slot.start)
+/** The slots by day: "sábado, 21 de novembro" and its slots. */
+const slotDays = computed(() => {
+  const days: { day: string; label: string; slots: ScheduleSlot[] }[] = []
+  for (const slot of slots.value) {
+    const day = slotDay(slot)
+    let group = days.find((item) => item.day === day)
+    if (!group) {
+      group = { day, label: formatServerDateTime(slot.start, { weekday: 'long', day: 'numeric', month: 'long' }), slots: [] }
+      days.push(group)
+    }
+    group.slots.push(slot)
+  }
+  return days
+})
+const slotTime = (slot: ScheduleSlot) =>
+  `${formatServerDateTime(slot.start, { timeStyle: 'short' })} – ${formatServerDateTime(slot.end, { timeStyle: 'short' })}`
+const slotBadge = (slot: ScheduleSlot) => {
+  if (slot.mine) return { label: t('slots.mine'), class: 'bg-success-100 text-success-700 dark:bg-success-500/15 dark:text-success-300' }
+  if (slot.full) return { label: t('slots.full'), class: 'bg-danger-100 text-danger-700 dark:bg-danger-500/15 dark:text-danger-300' }
+  if (slot.problem) return { label: t('slots.closed'), class: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }
+  if (slot.schedule_id) return { label: t('slots.join'), class: 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300' }
+  return { label: t('slots.free'), class: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }
+}
 
 // the owner, as the API allows it: create_any_schedule on a new one (book_for_others),
 // update_any_schedule to hand one over (hand_over)
@@ -391,8 +492,28 @@ function localErrors(): Record<string, string[]> {
   return found
 }
 
+/** A place on the chosen slot: its schedule is booked, or joined when someone took it already. */
+async function takeSlot() {
+  if (!selectedSlot.value) return
+  saving.value = true
+  errors.value = {}
+  try {
+    const saved = await schedulesApi.takeSlot(selectedSlot.value)
+    toast.success(t(saved.user_id === me.value?.id ? 'schedule.created' : 'schedule.joined'))
+    router.replace({ name: 'ScheduleDetail', params: { id: saved.id } })
+  } catch (e: any) {
+    const serverErrors = e?.response?.data?.errors
+    if (serverErrors?.slot) errors.value = { slot: serverErrors.slot }
+    toast.error(apiErrorMessage(e, t('schedule.saveFailed')))
+    loadSlots() // someone may have taken the last place: show it as it is now
+  } finally {
+    saving.value = false
+  }
+}
+
 async function submit() {
   if (saving.value || !type.value) return
+  if (slotMode.value) return takeSlot()
   errors.value = localErrors()
   if (Object.keys(errors.value).length) return
 

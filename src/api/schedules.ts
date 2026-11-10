@@ -45,6 +45,8 @@ export interface Schedule {
   approval_problem?: string | null;
   /** pending primary schedule waiting for someone who may go alone (an Experiente) to join */
   needs_independent?: boolean;
+  /** booked on a slot (shift): its comment and how many people it has / takes (null = no limit) */
+  slot?: { id: number; comment: string | null; capacity: number | null; people: number } | null;
   /** set when it comes from the copy saved on the device (no connection) */
   offline?: boolean;
 }
@@ -86,6 +88,27 @@ export interface ScheduleTypeOption {
   /** daily hours, "HH:mm" */
   min_time: string | null;
   max_time: string | null;
+  /** people pick one of its slots (shifts) instead of giving hours (missing from an older API) */
+  uses_slots?: boolean;
+}
+
+/** A slot (shift) of a type that uses slots (GET /schedules/slots). */
+export interface ScheduleSlot {
+  id: number;
+  start: string;
+  end: string;
+  comment: string | null;
+  /** null = no limit */
+  capacity: number | null;
+  /** people on it (its owner included) */
+  people: number;
+  full: boolean;
+  /** its schedule, once someone took it */
+  schedule_id: number | null;
+  /** the signed-in user is on it */
+  mine: boolean;
+  /** why it can't be taken (null = it can) */
+  problem: string | null;
 }
 
 /** The choices of the schedule form (GET /schedules/form-options). */
@@ -189,6 +212,19 @@ export const schedulesApi = {
 
   async formOptions(panel = 'admin'): Promise<ScheduleFormOptions> {
     const response = await axiosInstance.get(`/${panel}/schedules/form-options`);
+    return response.data.data;
+  },
+
+  /** The slots of a type that have not ended, earliest first. */
+  async fetchSlots(typeId: number, panel = 'admin'): Promise<ScheduleSlot[]> {
+    const response = await axiosInstance.get(`/${panel}/schedules/slots`, { params: { schedule_type_id: typeId } });
+    return response.data.data ?? [];
+  },
+
+  /** Take a place on a slot: the first person books its schedule, the next ones join it. */
+  async takeSlot(slotId: number, panel = 'admin'): Promise<Schedule> {
+    const response = await axiosInstance.post(`/${panel}/schedules/slots/${slotId}`);
+    syncOfflineData();
     return response.data.data;
   },
 
