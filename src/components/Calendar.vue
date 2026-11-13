@@ -136,7 +136,7 @@ import ptLocale from '@fullcalendar/core/locales/pt'
 import luxonPlugin from '@fullcalendar/luxon3'
 import { useSchedulesStore } from '../stores/schedules'
 import { t, locale, intlLocale } from '../i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useToastStore } from '../stores/toast'
 import { useAuthStore } from '../stores/auth'
 import { useConnectionStore } from '../stores/connection'
@@ -149,6 +149,7 @@ import type { Schedule } from '../api/schedules'
 
 const toast = useToastStore()
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const connection = useConnectionStore()
 // creating needs the server (its rules, approval): not offline
@@ -185,6 +186,10 @@ const calendarRef = ref<any>(null)
 // Coming back always opens this device's chosen view on this week: nothing of the last visit is kept
 // (landing on an old week, or a view chosen long ago, was confusing)
 const initialView = calendarViewSettings.value.initial
+// ...unless a day is asked for (?date=YYYY-MM-DD, e.g. from the home strip): the same view, on that day
+const initialDate = typeof route.query.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(route.query.date)
+  ? route.query.date
+  : undefined
 
 // The view buttons this device shows (see Settings), in the order of CALENDAR_VIEWS
 const viewButtons = computed(() =>
@@ -282,6 +287,7 @@ const calendarOptions = computed(() => ({
   locales: [ptLocale],
   locale: locale.value,
   initialView,
+  initialDate,
   events: fetchEventsForRange,
   headerToolbar: false as const, // Disables original buttons since you built beautiful custom ones
   allDaySlot: true,

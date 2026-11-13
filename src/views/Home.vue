@@ -66,6 +66,9 @@
       </div>
     </section>
 
+    <!-- the primary calendar's next 7 days: filled or not -->
+    <PrimaryWeekStrip v-if="!offline" />
+
     <!-- 3. Quick actions -->
     <nav :class="['grid gap-3', canCreate ? 'grid-cols-2' : 'grid-cols-1']">
       <router-link v-if="canCreate" :to="{ name: 'ScheduleNew' }" :class="[action, 'bg-primary-600 text-white hover:bg-primary-500']">
@@ -131,6 +134,7 @@ import { apiErrorMessage } from '../utils/apiError'
 import { formatServerDateTime, toInputDate } from '../utils/datetime'
 import { currentWindow } from '../utils/offlineSync'
 import StatusBadge from '../components/common/StatusBadge.vue'
+import PrimaryWeekStrip from '../components/PrimaryWeekStrip.vue'
 
 /**
  * The home screen: what matters now, for the signed-in volunteer (and approvers).

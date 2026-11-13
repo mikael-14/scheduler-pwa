@@ -93,6 +93,25 @@ export interface ScheduleTypeOption {
 }
 
 /** A slot (shift) of a type that uses slots (GET /schedules/slots). */
+/** A day of the primary calendar on the home strip (PrimaryWeekHandler): counts only. */
+export interface PrimaryWeekDay {
+  /** "YYYY-MM-DD" */
+  date: string;
+  /** people approved / only requested that day */
+  approved: number;
+  pending: number;
+  /** schedules cancelled or rejected that day */
+  cancelled: number;
+  /** someone approved, only requests, only cancelled / rejected schedules, or nothing at all */
+  state: 'approved' | 'pending' | 'cancelled' | 'empty';
+}
+
+/** Today and the next 6 days of the primary type (none: `type` null, no days). */
+export interface PrimaryWeek {
+  type: { id: number; name: string; color: string | null } | null;
+  days: PrimaryWeekDay[];
+}
+
 export interface ScheduleSlot {
   id: number;
   start: string;
@@ -216,6 +235,12 @@ export const schedulesApi = {
   },
 
   /** The slots of a type that have not ended, earliest first. */
+  /** The home strip: is each of the next 7 days of the primary calendar filled? */
+  async primaryWeek(panel = 'admin'): Promise<PrimaryWeek> {
+    const response = await axiosInstance.get(`/${panel}/schedules/primary-week`);
+    return response.data.data;
+  },
+
   async fetchSlots(typeId: number, panel = 'admin'): Promise<ScheduleSlot[]> {
     const response = await axiosInstance.get(`/${panel}/schedules/slots`, { params: { schedule_type_id: typeId } });
     return response.data.data ?? [];
