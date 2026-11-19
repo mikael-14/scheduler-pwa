@@ -1,4 +1,7 @@
 # Apache (cPanel) hosting of the built PWA (copied into dist/ by the build).
+
+# No "Index of /assets" pages listing the files of a folder
+Options -Indexes
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
