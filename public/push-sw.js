@@ -15,7 +15,8 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(title, {
       body: payload.body || '',
       icon: payload.icon || '/img/icons/icon-192x192.png',
-      badge: payload.badge || '/img/icons/icon-192x192.png',
+      // status-bar icon: Android uses only its transparency, so it must be a white shape on transparent
+      badge: payload.badge || '/img/icons/badge-96x96.png',
       tag: payload.tag,
       data: payload.data || {},
     }),

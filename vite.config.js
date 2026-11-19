@@ -32,7 +32,8 @@ export default defineConfig({
         'img/icons/apple-touch-icon.png',
         'img/icons/icon-192x192.png',
         'img/icons/icon-512x512.png',
-        'img/icons/icon-maskable-512x512.png'
+        'img/icons/icon-maskable-512x512.png',
+        'img/icons/badge-96x96.png'
       ],
       // what the phone needs to install the app (home screen icon, name, splash screen)
       manifest: {
