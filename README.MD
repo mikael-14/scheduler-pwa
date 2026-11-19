@@ -11,6 +11,7 @@ pwa-scheduler
 │   ├── App.vue
 ├── public
 │   ├── img/icons      # app icons (home screen, splash, notifications)
+│   ├── .htaccess      # Apache: HTTPS, app routes, security headers (CSP), caching
 │   └── push-sw.js     # web push handlers, imported by the generated service worker
 ├── Dockerfile
 ├── docker-compose.yml
@@ -68,6 +69,23 @@ The app shows each page and button only to who may use it, from the permissions 
 (`GET /api/user`) and each schedule's `can` flags; the API checks everything again. Page guards
 are in `src/router/index.ts` (`meta.permissions`). The roles, their permissions and what each page
 needs are described in `scheduler-api/README.md` ("Permissions and roles" → "In the PWA").
+
+### Security
+
+- **Headers**: `public/.htaccess` (copied into `dist/`) sets a strict Content-Security-Policy, plus
+  HSTS, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` and `Permissions-Policy`. The
+  page may only run its own scripts and talk to itself and the API: the build replaces
+  `__API_ORIGIN__` with the origin of `VITE_API_URL` (`securityHeaders` plugin in
+  `vite.config.js`). A new outside service (fonts, images, scripts, another API) must be added to
+  that policy, or the browser blocks it. Nothing is loaded from other sites: the avatars are
+  drawn by `UserAvatar.vue`, and the Google / Facebook logos are in `public/img/social`.
+- **Email confirmation**: after registering, and after changing the email in the profile, the
+  app waits on `/verify-email` (`src/views/VerifyEmail.vue`). That page also opens the link from
+  the email, resends it, and lets a mistyped email be corrected. An API answer of 403
+  `email_unverified` sends the user there (`src/config/axios.ts`).
+- **Notifications** only open pages of the app (`public/push-sw.js`).
+- 429 answers (rate limits, see `scheduler-api/README.md` → "Security") show "Demasiados pedidos
+  seguidos".
 
 ### SSH
 
