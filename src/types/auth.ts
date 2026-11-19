@@ -16,6 +16,8 @@ export interface User {
   /** the emails that can wait: each right away, or in a summary twice / once a day */
   email_digest?: EmailDigest;
   approved_at?: string | null;
+  /** null until the email is confirmed (password sign-ups, after an email change) */
+  email_verified_at?: string | null;
   /** false for accounts made with Google / Facebook that never set a password */
   has_password?: boolean;
   /** linked sign-in providers, e.g. ['google'] */
@@ -36,6 +38,8 @@ export interface RegisterCredentials {
   password: string;
   password_confirmation: string;
   locale?: string;
+  /** honeypot: hidden from people, only bots fill it in */
+  website?: string;
 }
 
 export interface AuthResponse {

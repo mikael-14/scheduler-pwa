@@ -1,7 +1,8 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'// Swap this out for react() if you're using React!
 import { VitePWA } from 'vite-plugin-pwa'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
 
 // Every build is a new version ("0.0.1+202610281530"): built into the app and written to
 // version.json, so open apps see a new deploy and reload (src/utils/appVersion)
@@ -16,13 +17,30 @@ const versionFile = {
   },
 }
 
-export default defineConfig({
+/**
+ * The Content-Security-Policy in public/.htaccess names the API's origin (avatars and API calls):
+ * it is taken from VITE_API_URL of the build (.env.production), so the policy follows the deploy.
+ */
+const securityHeaders = (mode) => ({
+  name: 'security-headers',
+  apply: 'build',
+  closeBundle() {
+    const { VITE_API_URL } = loadEnv(mode, process.cwd(), 'VITE_')
+    const apiOrigin = new URL(VITE_API_URL || 'https://localhost:9443/api').origin
+    const file = path.resolve(process.cwd(), 'dist', '.htaccess')
+    if (!existsSync(file)) return
+    writeFileSync(file, readFileSync(file, 'utf8').replaceAll('__API_ORIGIN__', apiOrigin))
+  },
+})
+
+export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
   },
   plugins: [
     vue(),
     versionFile,
+    securityHeaders(mode),
     VitePWA({
       registerType: 'autoUpdate',
       // icons live in public/img/icons (drawn by a script; replace the PNGs to change the logo,
@@ -122,4 +140,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

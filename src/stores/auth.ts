@@ -153,7 +153,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** The API says the email is not confirmed (any more): show the verify screen. */
+  function markUnverified() {
+    if (user.value && user.value.email_verified_at !== null) {
+      setUser({ ...user.value, email_verified_at: null })
+    }
+    if (window.location.pathname !== '/verify-email') {
+      window.location.replace('/verify-email')
+    }
+  }
+
   const isAuthenticated = () => !!token.value
+  // Only an explicit null means "not confirmed": a user cached by an older app version has no
+  // such field and counts as confirmed until the API says otherwise
+  const isEmailVerified = () => user.value?.email_verified_at !== null
   // Signed in, but the account could not be loaded yet (no connection on the first visit)
   const isUserUnknown = () => !!token.value && !user.value
   const isApproved = () => !!user.value?.approved_at
@@ -163,6 +176,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     user, token, permissions, loggingOut, setToken, tokenIssuedAt, setUser, setPermissions, clear, logout,
-    endSession, markPending, isAuthenticated, isUserUnknown, isApproved, can, canApprove
+    endSession, markPending, markUnverified, isAuthenticated, isUserUnknown, isEmailVerified, isApproved, can, canApprove
   }
 })

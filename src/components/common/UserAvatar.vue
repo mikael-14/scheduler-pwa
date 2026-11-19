@@ -34,5 +34,10 @@ const color = computed(() => {
   return `hsl(${Math.abs(hash) % 360} 55% 45%)`
 })
 
-const textSize = computed(() => (/\bh-(1[0-9]|[89])\b/.test(props.size) ? 'text-sm' : 'text-[0.625rem]'))
+// initials that fit the circle: tiny in lists, larger in the header and the profile photo
+const textSize = computed(() => {
+  const height = Number(/\bh-(\d+)\b/.exec(props.size)?.[1] ?? 0)
+  if (height >= 16) return 'text-2xl'
+  return height >= 8 ? 'text-sm' : 'text-[0.625rem]'
+})
 </script>

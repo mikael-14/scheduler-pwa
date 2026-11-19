@@ -8,6 +8,9 @@ const routes = [
   { path: '/forgot-password', name: 'ForgotPassword', component: () => import('../views/ForgotPassword.vue'), meta: { public: true } },
   // opened from the email; works whoever is signed in on this device (the reset signs everyone out)
   { path: '/reset-password', name: 'ResetPassword', component: () => import('../views/ResetPassword.vue'), meta: { public: true } },
+  // "confirm your email": the emailed link (works signed in or not, on any device), and the
+  // waiting screen of a signed-in account whose email is not confirmed yet
+  { path: '/verify-email', name: 'VerifyEmail', component: () => import('../views/VerifyEmail.vue'), meta: { public: true } },
   // schedules: the same permissions as their API calls (e.g. an Externo, who only joins, never
   // lands on the booking form); what can be done with each schedule comes from the API (`can`)
   { path: '/calendar', name: 'Calendar', component: () => import('../views/CalendarView.vue'), meta: { requiresAuth: true, permissions: ['view_any_schedule'] } },
@@ -65,6 +68,12 @@ export default function createRouter(): Router {
       // Redirect logged-in users from login/register
       if (to.name === 'Login' || to.name === 'Register') {
         return next({ name: 'Home' })
+      }
+
+      // The email comes first (accounts made with a password): only the verify screen until
+      // it is confirmed; then the approval, as before
+      if (!authStore.isEmailVerified()) {
+        return next({ name: 'VerifyEmail' })
       }
 
       // If the user is authenticated but not approved, they should only be able

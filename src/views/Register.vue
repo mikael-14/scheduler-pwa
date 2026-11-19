@@ -8,6 +8,12 @@
 
     <div class="page-card mt-8 border-slate-200 bg-white px-4 py-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
         <form class="space-y-6" @submit.prevent="handleRegister">
+          <!-- honeypot: off screen and skipped by keyboard and screen readers; only bots fill it in -->
+          <div aria-hidden="true" class="absolute -left-[10000px] h-px w-px overflow-hidden">
+            <label for="website">Website</label>
+            <input v-model="form.website" id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+
           <div>
             <label for="full-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('register.fullName') }}</label>
             <div class="mt-1">
@@ -66,12 +72,12 @@
           <div class="mt-6 grid grid-cols-2 gap-3">
             <button
               class="inline-flex w-full justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="mr-2 h-5 w-5" alt="Google" />
+              <img src="/img/social/google.svg" class="mr-2 h-5 w-5" alt="Google" />
               Google
             </button>
             <button
               class="inline-flex w-full justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
-              <img src="https://www.svgrepo.com/show/448224/facebook.svg" class="mr-2 h-5 w-5" alt="Facebook" />
+              <img src="/img/social/facebook.svg" class="mr-2 h-5 w-5" alt="Facebook" />
               Facebook
             </button>
           </div>
@@ -94,7 +100,8 @@ const form = reactive({
   name: '',
   email: '',
   password: '',
-  password_confirmation: ''
+  password_confirmation: '',
+  website: '',
 })
 
 const loading = ref(false)
@@ -111,7 +118,8 @@ const handleRegister = async () => {
   loading.value = true
   try {
     await authApi.register({ ...form, locale: locale.value })
-    router.push('/')
+    // a confirmation link was emailed: wait for it there
+    router.push({ name: 'VerifyEmail' })
   } catch (error) {
     toastStore.addToast(apiErrorMessage(error, t('register.failed')), 'error')
   } finally {

@@ -91,6 +91,24 @@ export const authApi = {
     return response.data.message;
   },
 
+  /**
+   * Confirms the email with the values of the emailed link (/verify-email?id&hash&expires&signature).
+   * Works without being signed in: the signature is the proof.
+   */
+  async verifyEmail(link: { id: string; hash: string; expires: string; signature: string }): Promise<string> {
+    const path = `/auth/email/verify/${encodeURIComponent(link.id)}/${encodeURIComponent(link.hash)}`;
+    const response = await axiosInstance.post(path, null, {
+      params: { expires: link.expires, signature: link.signature },
+    });
+    return response.data.message;
+  },
+
+  /** Sends the confirmation link again to the signed-in account's email. */
+  async resendVerification(): Promise<string> {
+    const response = await axiosInstance.post('/auth/email/resend');
+    return response.data.message;
+  },
+
   /** Always answers the same message, whether or not the email has an account. */
   async forgotPassword(email: string): Promise<string> {
     const response = await axiosInstance.post('/auth/forgot-password', { email });

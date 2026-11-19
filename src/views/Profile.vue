@@ -30,7 +30,8 @@
           <form @submit.prevent="updateProfile" class="space-y-6">
             <div class="flex items-center gap-6">
               <div class="relative h-20 w-20 shrink-0">
-                <img :src="avatarSrc" class="h-full w-full rounded-full border border-slate-200 object-cover dark:border-slate-700" :alt="t('profile.avatarAlt')" />
+                <!-- the photo, or the initials (drawn here: no outside service gets the name) -->
+                <UserAvatar :name="user?.name ?? ''" :src="user?.avatar_url" size="h-20 w-20" class="border border-slate-200 dark:border-slate-700" />
                 <button type="button" @click="avatarInput?.click()" :disabled="avatarBusy" :aria-label="t('profile.changePhoto')"
                   class="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                   <ArrowPathIcon v-if="avatarBusy" class="h-4 w-4 animate-spin" />
@@ -58,6 +59,16 @@
                 <span>{{ t('profile.email') }}</span>
                 <input v-model="profile.email" type="email" autocomplete="email" required :class="inputClass" />
                 <FieldError :errors="profileErrors.email" />
+              </label>
+            </div>
+
+            <!-- a new email needs the password (accounts with one) and a confirmation from the new address -->
+            <div v-if="emailChanged" class="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+              <p>{{ t('profile.emailChangeHelp') }}</p>
+              <label v-if="hasPassword" class="block space-y-2 font-medium text-slate-700 dark:text-slate-300">
+                <span>{{ t('profile.currentPassword') }}</span>
+                <input v-model="profile.currentPassword" type="password" autocomplete="current-password" required :class="inputClass" />
+                <FieldError :errors="profileErrors.current_password" />
               </label>
             </div>
 
@@ -194,6 +205,7 @@ import { intlLocale, t } from '../i18n'
 import { apiErrorMessage, isNetworkError } from '../utils/apiError'
 import FieldError from '../components/common/FieldError.vue'
 import OfflineNotice from '../components/common/OfflineNotice.vue'
+import UserAvatar from '../components/common/UserAvatar.vue'
 import { useConnectionStore } from '../stores/connection'
 
 const PROVIDERS = [
@@ -216,24 +228,36 @@ const user = computed(() => authStore.user)
 // the API says whether there is one; older cached users count as having one
 const hasPassword = computed(() => user.value?.has_password !== false)
 
-const avatarSrc = computed(() =>
-  user.value?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.value?.name ?? '')}`)
-
 // ---- personal information
 
 const profile = reactive({
   name: user.value?.name || '',
   email: user.value?.email || '',
   language: user.value?.language || (user.value as any)?.locale || 'pt',
+  currentPassword: '',
 })
 const savingProfile = ref(false)
 const profileErrors = ref<Record<string, string[]>>({})
+const emailChanged = computed(() => profile.email.trim() !== (user.value?.email ?? ''))
 
 const updateProfile = async () => {
   savingProfile.value = true
   profileErrors.value = {}
+  const changingEmail = emailChanged.value
   try {
-    await authApi.updateProfile({ name: profile.name, email: profile.email, language: profile.language })
+    await authApi.updateProfile({
+      name: profile.name,
+      email: profile.email,
+      language: profile.language,
+      ...(changingEmail && hasPassword.value ? { current_password: profile.currentPassword } : {}),
+    } as any)
+    profile.currentPassword = ''
+    if (changingEmail) {
+      // the new address must be confirmed before the app opens again
+      toast.success(t('verify.sentTo', { email: profile.email }))
+      router.replace({ name: 'VerifyEmail' })
+      return
+    }
     toast.success(t('profile.updated'))
   } catch (error: any) {
     profileErrors.value = error?.response?.data?.errors ?? {}

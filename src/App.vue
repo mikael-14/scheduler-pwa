@@ -63,7 +63,7 @@
           </button>
           <router-link to="/profile"
             class="h-8 w-8 overflow-hidden rounded-full border border-slate-200 dark:border-slate-700">
-            <img :src="user?.avatar_url || 'https://ui-avatars.com/api/?name=' + (user?.name || t('nav.defaultAvatarName'))" :alt="t('profile.avatarAlt')" />
+            <UserAvatar :name="user?.name || t('nav.defaultAvatarName')" :src="user?.avatar_url" size="h-8 w-8" />
           </router-link>
         </div>
       </header>
@@ -180,6 +180,7 @@ import AppDialog from './components/common/AppDialog.vue'
 import InstallButton from './components/common/InstallButton.vue'
 import PushPrompt from './components/common/PushPrompt.vue'
 import ConnectionStatus from './components/common/ConnectionStatus.vue'
+import UserAvatar from './components/common/UserAvatar.vue'
 import { t, locale, setLocale } from './i18n'
 
 

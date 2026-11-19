@@ -65,11 +65,11 @@
 
         <div class="mt-6 grid grid-cols-2 gap-3">
           <button @click="socialLogin('google')" class="inline-flex w-full justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="mr-2 h-5 w-5" alt="Google" />
+            <img src="/img/social/google.svg" class="mr-2 h-5 w-5" alt="Google" />
             Google
           </button>
           <button @click="socialLogin('facebook')" class="inline-flex w-full justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
-            <img src="https://www.svgrepo.com/show/448224/facebook.svg" class="mr-2 h-5 w-5" alt="Facebook" />
+            <img src="/img/social/facebook.svg" class="mr-2 h-5 w-5" alt="Facebook" />
             Facebook
           </button>
         </div>

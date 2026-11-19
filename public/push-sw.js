@@ -30,7 +30,14 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
   const path = (event.notification.data && event.notification.data.url) || '/notifications'
-  const target = new URL(path, self.location.origin).href
+  // only pages of this app: a full address to another site is never opened from a notification
+  let target = new URL('/notifications', self.location.origin).href
+  try {
+    const url = new URL(path, self.location.origin)
+    if (url.origin === self.location.origin) target = url.href
+  } catch (e) {
+    /* not an address: keep /notifications */
+  }
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {

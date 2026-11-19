@@ -13,6 +13,19 @@
 </IfModule>
 
 <IfModule mod_headers.c>
+    # ---- Security (see the security review) ----
+    # The browser keeps the sign-in token, so the page may only run this app's own code and talk
+    # to this app and its API: an injected script could neither load nor send anything out.
+    # __API_ORIGIN__ is replaced at build time with the origin of VITE_API_URL (vite.config.js).
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: __API_ORIGIN__; font-src 'self' data:; connect-src 'self' __API_ORIGIN__; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    # HTTPS only, for a year (the rewrite above already sends plain HTTP here)
+    Header always set Strict-Transport-Security "max-age=31536000" "expr=%{HTTPS} == 'on'"
+    Header always set X-Content-Type-Options "nosniff"
+    # never shown inside another site (clickjacking)
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+
     # Never cache the entry points, so a new version is picked up at once
     <FilesMatch "^(index\.html|sw\.js|push-sw\.js|registerSW\.js|manifest\.webmanifest|version\.json)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate"

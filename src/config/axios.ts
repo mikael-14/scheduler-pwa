@@ -53,6 +53,8 @@ axiosInstance.interceptors.response.use(
         authStore.endSession('session_expired');
       } else if (status === 403 && code === 'account_inactive') {
         authStore.endSession('account_inactive');
+      } else if (status === 403 && code === 'email_unverified') {
+        authStore.markUnverified();
       } else if (status === 403 && code === 'account_pending') {
         authStore.markPending();
       }

@@ -21,6 +21,11 @@ export function apiErrorMessage(error: any, fallback: string): string {
     return t('errors.server')
   }
 
+  // too many requests in a short time (the API's limits)
+  if (status === 429) {
+    return t('errors.tooMany')
+  }
+
   const data = error?.response?.data
 
   if (data?.errors && typeof data.errors === 'object') {
