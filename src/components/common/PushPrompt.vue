@@ -31,7 +31,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useDialogStore } from '../../stores/dialog'
 import { useToastStore } from '../../stores/toast'
 import {
-  PushError, enableDevicePush, hasDeviceSubscription, onPushPermissionChange, pushPermission, restoreDevicePush,
+  PushError, enableDevicePush, pushErrorMessage, hasDeviceSubscription, onPushPermissionChange, pushPermission, restoreDevicePush,
   type PushPermission,
 } from '../../utils/push'
 import { showUnblockHelp } from '../../utils/pushHelp'
@@ -89,8 +89,11 @@ async function enable() {
     subscribed.value = true
     toast.success(t('push.enabled'))
   } catch (error) {
-    if (!(error instanceof PushError && error.reason === 'denied')) {
-      toast.error(t('settings.pushUnsupported'))
+    if (error instanceof PushError && error.reason === 'denied') {
+      // refused at the prompt, or switched off for the browser in the phone's settings
+      if (pushPermission() !== 'denied') showUnblockHelp(dialog)
+    } else {
+      toast.error(pushErrorMessage(error))
     }
   } finally {
     busy.value = false

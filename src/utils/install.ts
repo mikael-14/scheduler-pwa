@@ -48,6 +48,26 @@ export function listenForInstall() {
     installed.value = true
     deferredPrompt.value = null
   })
+
+  if (!installed.value) checkInstalledApp()
+}
+
+/**
+ * In a browser tab the page cannot tell by itself that the app is already on the phone: Chrome
+ * (Android) can, through `getInstalledRelatedApps` and the manifest's `related_applications`.
+ * Safari (iPhone / iPad) and Firefox have no such call: they keep showing the instructions.
+ */
+async function checkInstalledApp() {
+  const nav = navigator as Navigator & {
+    getInstalledRelatedApps?: () => Promise<Array<{ platform: string }>>
+  }
+  if (typeof nav.getInstalledRelatedApps !== 'function') return
+  try {
+    const apps = await nav.getInstalledRelatedApps()
+    if (apps.some((app) => app.platform === 'webapp')) installed.value = true
+  } catch {
+    // not allowed here (e.g. inside an iframe): leave the button as it is
+  }
 }
 
 /**

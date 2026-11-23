@@ -1,10 +1,39 @@
 import { notificationsApi } from '../api/notifications'
+import { t } from '../i18n'
+import { apiErrorMessage } from './apiError'
 
-export type PushFailure = 'unsupported' | 'denied' | 'no-key'
+/**
+ * - unsupported: no service worker / Push API / Notification in this browser;
+ * - denied:      the person (or the phone's settings for the browser) blocked notifications;
+ * - no-key:      the API has no VAPID public key configured;
+ * - no-worker:   the app's service worker is not running (so nothing can receive a push);
+ * - subscribe:   the browser's push service refused (e.g. Google Play services missing or blocked).
+ */
+export type PushFailure = 'unsupported' | 'denied' | 'no-key' | 'no-worker' | 'subscribe'
 
 export class PushError extends Error {
-  constructor(public reason: PushFailure) {
-    super(reason)
+  constructor(public reason: PushFailure, public detail = '') {
+    super(detail ? `${reason}: ${detail}` : reason)
+  }
+}
+
+/** The browser's own wording of an error, to show next to ours (helps tell what went wrong). */
+function describe(error: unknown): string {
+  return error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+}
+
+/** `navigator.serviceWorker.ready` never settles without a service worker: give up after a while. */
+async function serviceWorkerReady(timeoutMs = 10000): Promise<ServiceWorkerRegistration> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new PushError('no-worker')), timeoutMs)
+      }),
+    ])
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -49,6 +78,23 @@ export async function restoreDevicePush(): Promise<boolean> {
   }
 }
 
+/**
+ * The message for a failed "turn on push": what went wrong, in the person's words, plus the
+ * browser's own error when there is one. Not for 'denied' (that one gets the unblock help).
+ */
+export function pushErrorMessage(error: unknown): string {
+  // the API calls (key, registering the subscription) failed
+  if (!(error instanceof PushError)) return apiErrorMessage(error, t('push.errorSubscribe'))
+  const key = {
+    unsupported: 'settings.pushUnsupported',
+    denied: 'settings.pushDenied',
+    'no-key': 'push.errorNoKey',
+    'no-worker': 'push.errorNoWorker',
+    subscribe: 'push.errorSubscribe',
+  }[error.reason]
+  return error.detail ? `${t(key)} (${error.detail})` : t(key)
+}
+
 /** Where to unblock notifications, for the device in hand. */
 export function unblockInstructionsKey(): string {
   const agent = navigator.userAgent
@@ -86,13 +132,21 @@ export async function enableDevicePush(): Promise<void> {
   const key = await notificationsApi.vapidPublicKey()
   if (!key) throw new PushError('no-key')
 
-  const registration = await navigator.serviceWorker.ready
-  const subscription =
-    (await registration.pushManager.getSubscription()) ??
-    (await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
-    }))
+  const registration = await serviceWorkerReady()
+  let subscription: PushSubscription
+  try {
+    subscription =
+      (await registration.pushManager.getSubscription()) ??
+      (await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
+      }))
+  } catch (error) {
+    // NotAllowedError here = notifications off for the browser in the phone's settings
+    if (error instanceof DOMException && error.name === 'NotAllowedError') throw new PushError('denied', describe(error))
+    console.warn('Push subscription failed.', error)
+    throw new PushError('subscribe', describe(error))
+  }
 
   const json = subscription.toJSON()
   await notificationsApi.subscribe({

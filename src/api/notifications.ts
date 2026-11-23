@@ -10,6 +10,8 @@ export interface AppNotification {
   /** what it is about: pending_approval, schedule_status, schedule_updated, coverage, participant_added, participant_removed, booked_for_you, announcement, account, other */
   kind?: string
   path: string
+  /** one link per day of a coverage summary ("terça-feira, 24 de novembro (amanhã)" → its booking form) */
+  links?: { label: string; path: string }[]
   read_at: string | null
   created_at: string
 }

@@ -31,8 +31,9 @@
 
     <ul v-else class="space-y-2">
       <li v-for="item in visible" :key="item.id">
-        <button type="button" @click="open(item)"
-          :class="['page-card flex w-full items-start gap-3 p-4 text-left shadow-sm transition',
+        <!-- a div acting as the button: the day links inside it are buttons of their own -->
+        <div role="button" tabindex="0" @click="open(item)" @keydown.enter.self="open(item)" @keydown.space.self.prevent="open(item)"
+          :class="['page-card flex w-[calc(100%+2rem)] cursor-pointer items-start sm:w-full gap-3 p-4 text-left shadow-sm transition',
             item.read_at
               ? 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800'
               : 'border-primary-200 bg-primary-50/60 hover:bg-primary-50 dark:border-primary-500/30 dark:bg-primary-500/10 dark:hover:bg-primary-500/15']">
@@ -47,10 +48,18 @@
             </span>
             <span :class="['mt-0.5 block text-sm text-slate-900 dark:text-white', item.read_at ? 'font-medium' : 'font-semibold']">{{ item.title }}</span>
             <span v-if="item.body" class="block whitespace-pre-line text-sm text-slate-600 dark:text-slate-300">{{ item.body }}</span>
+            <!-- coverage summary: one tap per day straight to its booking form -->
+            <span v-if="item.links?.length" class="mt-2 flex flex-col items-start gap-1.5">
+              <button v-for="link in item.links" :key="link.path" type="button" @click.stop="open(item, link.path)"
+                :class="['inline-flex max-w-full items-center gap-1 rounded-lg border bg-white px-2.5 py-1 text-left text-xs font-medium transition dark:bg-slate-900', linkClass(item)]">
+                <span class="min-w-0">{{ link.label }}</span>
+                <ChevronRightIcon class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              </button>
+            </span>
             <span class="mt-1 block text-xs text-slate-400">{{ formatDate(item.created_at) }}</span>
           </span>
-          <ChevronRightIcon v-if="item.path && item.path !== '/notifications'" class="mt-2 h-4 w-4 shrink-0 text-slate-400" />
-        </button>
+          <ChevronRightIcon v-if="!item.links?.length && item.path && item.path !== '/notifications'" class="mt-2 h-4 w-4 shrink-0 text-slate-400" />
+        </div>
       </li>
     </ul>
   </div>
@@ -60,7 +69,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  BellIcon, CalendarDaysIcon, CheckBadgeIcon, ClockIcon, ExclamationTriangleIcon, MegaphoneIcon, PencilSquareIcon, UserCircleIcon, UserGroupIcon, UserMinusIcon, UserPlusIcon,
+  BellIcon, CalendarDaysIcon, CheckBadgeIcon, ClockIcon, ExclamationCircleIcon, ExclamationTriangleIcon, MegaphoneIcon, PencilSquareIcon, UserCircleIcon, UserGroupIcon, UserMinusIcon, UserPlusIcon,
 } from '@heroicons/vue/24/outline'
 import { ChevronRightIcon } from '@heroicons/vue/20/solid'
 import { t, intlLocale } from '../i18n'
@@ -101,15 +110,24 @@ const ICONS: Record<string, unknown> = {
   announcement: MegaphoneIcon,
   account: UserCircleIcon,
 }
-const kindIcon = (item: AppNotification) => ICONS[item.kind ?? ''] ?? BellIcon
-const kindLabel = (item: AppNotification) =>
-  item.kind && item.kind !== 'other' && ICONS[item.kind] ? t(`notifications.kind.${item.kind}`) : t('notifications.kind.other')
+/** A coverage summary is urgent (red, danger) for the next days, look-ahead (amber, warning) after. */
+const urgentCoverage = (item: AppNotification) => item.kind === 'coverage' && item.status === 'danger'
+const kindIcon = (item: AppNotification) => urgentCoverage(item) ? ExclamationCircleIcon : ICONS[item.kind ?? ''] ?? BellIcon
+const kindLabel = (item: AppNotification) => {
+  if (urgentCoverage(item)) return t('notifications.kind.coverage_urgent')
+  return item.kind && item.kind !== 'other' && ICONS[item.kind] ? t(`notifications.kind.${item.kind}`) : t('notifications.kind.other')
+}
 
 const toneClass = (item: AppNotification) => ({
   success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
   danger: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
   warning: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
 }[item.status] ?? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300')
+
+/** The day links in the colour of the summary: red when urgent, amber when looking ahead. */
+const linkClass = (item: AppNotification) => item.status === 'danger'
+  ? 'border-red-200 text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
+  : 'border-amber-200 text-amber-800 hover:bg-amber-50 dark:border-amber-500/30 dark:text-amber-300 dark:hover:bg-amber-500/10'
 
 const load = async () => {
   try {
@@ -127,7 +145,8 @@ const load = async () => {
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
 
-const open = async (item: AppNotification) => {
+/** Marks it read, then goes to `path`: a day link, or by default where the notification leads. */
+const open = async (item: AppNotification, path: string = item.path) => {
   if (!item.read_at) {
     try {
       await notificationsApi.markRead(item.id)
@@ -139,8 +158,8 @@ const open = async (item: AppNotification) => {
     }
   }
 
-  if (item.path && item.path !== '/notifications') {
-    router.push(item.path)
+  if (path && path !== '/notifications') {
+    router.push(path)
   }
 }
 

@@ -85,6 +85,14 @@ export default defineConfig(({ mode }) => ({
             type: 'image/png',
             purpose: 'maskable'
           }
+        ],
+        // lets the page in a Chrome tab ask "is this app already installed?"
+        // (navigator.getInstalledRelatedApps, src/utils/install.ts): must name this manifest's own address
+        related_applications: [
+          {
+            platform: 'webapp',
+            url: `${(loadEnv(mode, process.cwd(), 'VITE_').VITE_APP_URL || 'https://localhost:5173').replace(/\/$/, '')}/manifest.webmanifest`
+          }
         ]
       },
       workbox: {

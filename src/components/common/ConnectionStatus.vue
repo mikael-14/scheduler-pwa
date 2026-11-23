@@ -15,7 +15,7 @@
       <!-- click outside closes -->
       <div class="fixed inset-0 z-40" @click="open = false"></div>
       <div role="dialog"
-        class="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-lg dark:border-slate-700 dark:bg-slate-900">
+        class="fixed inset-x-4 top-[4.5rem] z-50 rounded-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64 border border-slate-200 bg-white p-4 text-sm shadow-lg dark:border-slate-700 dark:bg-slate-900">
         <p class="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
           <span :class="['h-2.5 w-2.5 rounded-full', dotClass]"></span>
           {{ statusLabel }}
