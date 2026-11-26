@@ -19,7 +19,8 @@ export const useBadgesStore = defineStore('badges', () => {
     if (!authStore.isAuthenticated() || !authStore.isApproved()) return Promise.resolve()
 
     refreshing ??= Promise.allSettled([
-      notificationsApi.list().then((result) => (unreadNotifications.value = result.unread)),
+      // only the count matters here: one unread item, not the whole page (and not the offline copy)
+      notificationsApi.list({ filter: 'unread', perPage: 1 }).then((result) => (unreadNotifications.value = result.unread)),
       authStore.canApprove()
         ? schedulesApi.fetchPending().then((pending) => (pendingApprovals.value = pending.length))
         : Promise.resolve((pendingApprovals.value = 0)),
