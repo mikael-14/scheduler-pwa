@@ -1,3 +1,4 @@
+import axiosInstance from '../config/axios'
 import { notificationsApi } from '../api/notifications'
 import { t } from '../i18n'
 import { apiErrorMessage } from './apiError'
@@ -64,17 +65,106 @@ export async function onPushPermissionChange(callback: () => void): Promise<void
 }
 
 /**
- * Permission already granted and push wanted, but this device lost its subscription (site data
- * cleared, browser reinstalled…): subscribe again, quietly. Resolves to true when it did.
+ * Permission already granted and push wanted (called when the app starts):
+ * - this device lost its subscription (site data cleared, browser reinstalled…): subscribe again,
+ *   quietly, and resolve to true;
+ * - it has one: send it to the API again anyway, as the browser may have replaced it with one the
+ *   API does not know yet (pushes would then go to the old, dead address). Resolves to false.
  */
 export async function restoreDevicePush(): Promise<boolean> {
-  if (pushPermission() !== 'granted' || (await hasDeviceSubscription())) return false
+  if (pushPermission() !== 'granted') return false
   try {
-    await enableDevicePush() // no prompt: the permission is already there
-    return true
+    const current = await currentEndpoint()
+    // the same one was sent a short while ago: nothing to do (this runs each time the app is shown)
+    if (current && current === lastSent().endpoint && Date.now() - lastSent().at < RESEND_MS) return false
+    await enableDevicePush() // no prompt: the permission is already there; re-sends an existing one
+    return !current
   } catch (error) {
     console.warn('Could not restore the push subscription.', error)
     return false
+  }
+}
+
+const SENT_KEY = 'pushSubscriptionSent'
+const RESEND_MS = 6 * 60 * 60 * 1000
+
+function lastSent(): { endpoint?: string; at: number } {
+  try {
+    return JSON.parse(localStorage.getItem(SENT_KEY) ?? '') ?? { at: 0 }
+  } catch {
+    return { at: 0 }
+  }
+}
+
+function markSent(endpoint: string | null): void {
+  try {
+    if (endpoint) localStorage.setItem(SENT_KEY, JSON.stringify({ endpoint, at: Date.now() }))
+    else localStorage.removeItem(SENT_KEY)
+  } catch {
+    /* storage unavailable: it is just sent again next time */
+  }
+}
+
+async function currentEndpoint(): Promise<string | null> {
+  if (!pushSupported()) return null
+  try {
+    const registration = await navigator.serviceWorker.ready
+    return (await registration.pushManager.getSubscription())?.endpoint ?? null
+  } catch {
+    return null
+  }
+}
+
+/*
+ * What the service worker needs to renew the subscription on its own (public/push-sw.js): it cannot
+ * read the app's storage or use its token. Kept in Cache Storage, which both can open.
+ */
+const CONFIG_CACHE = 'push-config'
+const CONFIG_URL = '/push-config'
+const CHECK_TAG = 'push-check'
+
+async function rememberForServiceWorker(endpoint: string, key: string): Promise<void> {
+  try {
+    const cache = await caches.open(CONFIG_CACHE)
+    const api = String(axiosInstance.defaults.baseURL ?? '').replace(/\/$/, '')
+    await cache.put(CONFIG_URL, new Response(JSON.stringify({ api, key, endpoint }), {
+      headers: { 'Content-Type': 'application/json' },
+    }))
+  } catch (error) {
+    console.warn('Could not save the push settings for the service worker.', error)
+  }
+}
+
+/** Periodic Background Sync: not in TypeScript's DOM types yet (Chrome only). */
+type WithPeriodicSync = ServiceWorkerRegistration & {
+  periodicSync?: {
+    register(tag: string, options: { minInterval: number }): Promise<void>
+    unregister(tag: string): Promise<void>
+  }
+}
+
+async function forgetForServiceWorker(registration?: ServiceWorkerRegistration): Promise<void> {
+  try {
+    await caches.delete(CONFIG_CACHE)
+    await (registration as WithPeriodicSync | undefined)?.periodicSync?.unregister(CHECK_TAG)
+  } catch {
+    /* nothing saved */
+  }
+}
+
+/**
+ * Ask the browser to wake the service worker about twice a day to check the subscription is
+ * still there (Chrome, for installed apps it sees used; elsewhere nothing happens).
+ */
+async function scheduleSubscriptionCheck(registration: ServiceWorkerRegistration): Promise<void> {
+  try {
+    const periodicSync = (registration as WithPeriodicSync).periodicSync
+    if (!periodicSync) return
+    const status = await navigator.permissions.query({ name: 'periodic-background-sync' as PermissionName })
+    if (status.state !== 'granted') return
+    await periodicSync.register(CHECK_TAG, { minInterval: 12 * 60 * 60 * 1000 })
+  } catch {
+    // not supported here: the subscription is still checked whenever the app opens
   }
 }
 
@@ -153,6 +243,12 @@ export async function enableDevicePush(): Promise<void> {
     endpoint: json.endpoint as string,
     keys: json.keys as { p256dh: string; auth: string },
   })
+
+  markSent(json.endpoint as string)
+
+  // from now on the service worker can renew it by itself when the browser replaces it
+  await rememberForServiceWorker(json.endpoint as string, key)
+  await scheduleSubscriptionCheck(registration)
 }
 
 /** Remove this device's subscription from the browser and from the API. */
@@ -161,6 +257,9 @@ export async function disableDevicePush(): Promise<void> {
 
   // not `ready`, which never resolves when no service worker is registered (e.g. dev) and would hang logout
   const registration = await navigator.serviceWorker.getRegistration()
+  // signed out or push off: the service worker must not bring it back
+  await forgetForServiceWorker(registration)
+  markSent(null)
   const subscription = await registration?.pushManager.getSubscription()
   if (!subscription) return
 

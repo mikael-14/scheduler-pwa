@@ -92,7 +92,7 @@
           </div>
           <div v-if="schedule.internal_note" class="sm:col-span-2">
             <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('schedule.internalNote') }}</dt>
-            <dd class="mt-1 whitespace-pre-line rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+            <dd class="mt-1 whitespace-pre-line rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
               {{ schedule.internal_note }}
             </dd>
           </div>
