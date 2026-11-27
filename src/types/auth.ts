@@ -15,6 +15,8 @@ export interface User {
   all_push_notification?: boolean;
   /** the emails that can wait: each right away, or in a summary twice / once a day */
   email_digest?: EmailDigest;
+  /** a push now and then while an important notification is unread (server config/reminders.php) */
+  push_reminders?: boolean;
   approved_at?: string | null;
   /** null until the email is confirmed (password sign-ups, after an email change) */
   email_verified_at?: string | null;

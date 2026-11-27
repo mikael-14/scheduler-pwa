@@ -63,6 +63,19 @@
             </p>
           </div>
 
+          <!-- reminders of important notifications left unread: only with push on -->
+          <div v-if="prefs.push_notification"
+            class="mt-4 flex items-center justify-between gap-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+            <div>
+              <p class="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
+                <DevicePhoneMobileIcon class="h-4 w-4" />
+                {{ t('settings.pushReminders') }}
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ t('settings.pushRemindersHelp') }}</p>
+            </div>
+            <ToggleSwitch v-model="prefs.push_reminders" :label="t('settings.pushReminders')" :disabled="saving" />
+          </div>
+
           <!-- the emails that can wait: one by one, or in a summary (decisions about you always come at once) -->
           <div v-if="prefs.email_notification || prefs.all_email_notification"
             class="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -230,9 +243,9 @@ const pushDenied = ref(false)
 const pushIsSupported = pushSupported()
 
 type ToggleKey = 'email_notification' | 'push_notification' | 'all_email_notification' | 'all_push_notification'
-type Preferences = Record<ToggleKey, boolean> & { email_digest: EmailDigest }
+type Preferences = Record<ToggleKey, boolean> & { email_digest: EmailDigest; push_reminders: boolean }
 type PreferenceKey = keyof Preferences
-const KEYS: PreferenceKey[] = ['email_notification', 'push_notification', 'all_email_notification', 'all_push_notification', 'email_digest']
+const KEYS: PreferenceKey[] = ['email_notification', 'push_notification', 'all_email_notification', 'all_push_notification', 'email_digest', 'push_reminders']
 
 /** What is saved now. Push "on" means: the user wants it AND this device is subscribed. */
 const savedPreferences = (): Preferences => {
@@ -244,6 +257,8 @@ const savedPreferences = (): Preferences => {
     all_push_notification: !!user?.all_push_notification && deviceSubscribed.value,
     // an older API without it: the server's default
     email_digest: user?.email_digest ?? 'twice',
+    // on unless turned off (an older API without it: on)
+    push_reminders: user?.push_reminders !== false,
   }
 }
 

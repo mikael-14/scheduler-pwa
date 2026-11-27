@@ -7,6 +7,7 @@
  * title in the person's language with each push (PwaWebPushNotification).
  */
 const SUMMARY_TAG = 'summary'
+const REMINDER_TAG = 'reminder'
 const MAX_SEPARATE = 2
 const SUMMARY_LINES = 4
 const ICON = '/img/icons/icon-192x192.png'
@@ -19,9 +20,16 @@ async function showPush(payload) {
   const icon = payload.icon || ICON
   const badge = payload.badge || STATUS_ICON
 
+  // a reminder of important notifications still unread (notifications:remind): shown as it is,
+  // replacing the previous reminder, sounding again
+  if (data.reminder) {
+    return self.registration.showNotification(title, { body: payload.body || '', icon, badge, tag: REMINDER_TAG, renotify: true, data })
+  }
+
   const all = await self.registration.getNotifications()
   // the same notification pushed again replaces itself (same tag): not counted twice
-  const separate = all.filter((item) => item.tag !== SUMMARY_TAG && item.tag !== payload.tag)
+  // (a reminder stays apart: it is about notifications already counted)
+  const separate = all.filter((item) => item.tag !== SUMMARY_TAG && item.tag !== REMINDER_TAG && item.tag !== payload.tag)
   const summary = all.find((item) => item.tag === SUMMARY_TAG)
 
   if (!summary && separate.length < MAX_SEPARATE) {
