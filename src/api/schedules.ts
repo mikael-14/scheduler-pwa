@@ -36,6 +36,8 @@ export interface Schedule {
   can: {
     /** cancel: its creator, before it starts (there is no delete outside the admin panel) */
     update: boolean; cancel: boolean; approve: boolean;
+    /** once it started (update is false): only the description (and the staff's internal note) */
+    update_description?: boolean;
     /** admins, once it started: its owner did not come */
     not_shown?: boolean;
     /** join / leave someone else's schedule */

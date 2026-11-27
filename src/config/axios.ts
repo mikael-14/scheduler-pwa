@@ -19,9 +19,10 @@ axiosInstance.interceptors.request.use(config => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  // The API answers in this language for guests (login/register errors); for signed-in
-  // users it uses their profile language, which is the same value.
+  // The API answers in the language shown on this device, which can differ from the profile
+  // language (header switch). Notifications and email still use the profile language.
   config.headers['Accept-Language'] = locale.value;
+  config.headers['X-App-Language'] = locale.value;
   return config;
 });
 

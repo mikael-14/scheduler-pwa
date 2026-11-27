@@ -261,6 +261,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'notifications.markAllRead': 'Marcar todas como lidas',
     'notifications.loading': 'A carregar...',
     'notifications.empty': 'Ainda não tem notificações.',
+    'notifications.catchUp': 'Tem {count} notificações por ler.',
     'notifications.noneUnread': 'Não tem notificações por ler.',
     'notifications.all': 'Todas',
     'notifications.unreadTab': 'Por ler',
@@ -303,6 +304,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'profile.fullName': 'Nome completo',
     'profile.email': 'Endereço de email',
     'profile.language': 'Idioma',
+    'profile.languageHint': 'Usado nas notificações e emails, e ao iniciar sessão. O botão de idioma no topo só muda este dispositivo.',
     'profile.save': 'Guardar alterações',
     'profile.updated': 'Perfil atualizado com sucesso!',
     'profile.updateFailed': 'Não foi possível atualizar o perfil.',
@@ -355,9 +357,6 @@ export const messages: Record<Locale, Record<string, string>> = {
     'reset.badLink': 'Esta ligação está incompleta. Abra-a novamente a partir do email.',
     'reset.askNewLink': 'Pedir uma nova ligação',
     'reset.failed': 'Não foi possível alterar a palavra-passe.',
-
-    // language
-    'language.saveFailed': 'Não foi possível guardar o idioma. Tente novamente.',
 
     // calendar
     'calendar.title': 'Agendador',
@@ -444,6 +443,8 @@ export const messages: Record<Locale, Record<string, string>> = {
     'schedule.saved': 'Agendamento guardado.',
     'schedule.saveFailed': 'Não foi possível guardar o agendamento.',
     'schedule.edit': 'Editar',
+    'schedule.editDescription': 'Editar descrição',
+    'schedule.startedOnlyDescription': 'Este agendamento já começou: só a descrição pode ser alterada. Quem não compareceu é marcado na página do agendamento.',
     'schedule.markNotShown': 'Não compareceu',
     'schedule.markNotShownFor': 'Marcar {name} como não compareceu',
     'schedule.notShownTitle': 'Marcar como não compareceu?',
@@ -763,6 +764,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'notifications.markAllRead': 'Mark all as read',
     'notifications.loading': 'Loading...',
     'notifications.empty': 'You have no notifications yet.',
+    'notifications.catchUp': 'You have {count} unread notifications.',
     'notifications.noneUnread': 'You have no unread notifications.',
     'notifications.all': 'All',
     'notifications.unreadTab': 'Unread',
@@ -804,6 +806,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'profile.fullName': 'Full Name',
     'profile.email': 'Email Address',
     'profile.language': 'Language',
+    'profile.languageHint': 'Used for notifications and email, and when you sign in. The language button at the top only changes this device.',
     'profile.save': 'Save Changes',
     'profile.updated': 'Profile updated successfully!',
     'profile.updateFailed': 'Failed to update profile.',
@@ -856,8 +859,6 @@ export const messages: Record<Locale, Record<string, string>> = {
     'reset.badLink': 'This link is incomplete. Open it again from the email.',
     'reset.askNewLink': 'Ask for a new link',
     'reset.failed': 'Could not change the password.',
-
-    'language.saveFailed': 'Unable to save language preference. Please try again.',
 
     'calendar.title': 'Scheduler',
     'calendar.loading': 'Loading the calendar…',
@@ -943,6 +944,8 @@ export const messages: Record<Locale, Record<string, string>> = {
     'schedule.saved': 'Schedule saved.',
     'schedule.saveFailed': 'Could not save the schedule.',
     'schedule.edit': 'Edit',
+    'schedule.editDescription': 'Edit description',
+    'schedule.startedOnlyDescription': 'This schedule has already started: only its description can be changed. People who did not come are marked on the schedule\'s page.',
     'schedule.markNotShown': 'Did not show',
     'schedule.markNotShownFor': 'Mark {name} as did not show',
     'schedule.notShownTitle': 'Mark as did not show?',

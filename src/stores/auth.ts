@@ -4,7 +4,8 @@ import type { User } from '@/types'
 import { authApi } from '../api/auth'
 import { disableDevicePush } from '../utils/push'
 import { clearOfflineData } from '../utils/db'
-import { setLocale } from '../i18n'
+import { applyProfileLocale, forgetDeviceLocale } from '../i18n'
+import { closeShownNotifications, syncIconBadge } from './badges'
 import type { Router } from 'vue-router'
 
 const USER_CACHE_KEY = 'user'
@@ -40,7 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
   const permissions = ref<string[]>(token.value ? readCachedPermissions() : [])
 
   if (user.value?.language) {
-    setLocale(user.value.language)
+    applyProfileLocale(user.value.language)
   }
 
   function setToken(newToken: string) {
@@ -70,13 +71,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function setUser(newUser: User) {
-    // The API calls the language `locale`; the app uses `language`. Once a user is
-    // signed in, their profile language is the language of the whole app.
+    // The API calls the language `locale`; the app uses `language`. Once a user is signed in,
+    // their profile language is the app's language, unless this device picked its own (header switch).
     const language = newUser.language ?? (newUser.locale as User['language'])
     user.value = language ? { ...newUser, language } : newUser
 
     if (language) {
-      setLocale(language)
+      applyProfileLocale(language)
     }
 
     try {
@@ -104,6 +105,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('token')
     localStorage.removeItem(TOKEN_ISSUED_KEY)
     localStorage.removeItem(USER_CACHE_KEY)
+    // the next sign-in starts in its profile language
+    forgetDeviceLocale()
+    // the icon count and the notifications on the phone belonged to this account
+    syncIconBadge(0)
+    closeShownNotifications()
     // the agenda and notifications saved for offline use belong to this account
     clearOfflineData()
   }

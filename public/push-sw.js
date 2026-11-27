@@ -1,5 +1,57 @@
 /* Web push handling, loaded by the generated service worker (workbox importScripts). */
 
+/*
+ * One or two notifications are shown on their own; from the third on (e.g. a phone back online
+ * with several waiting) they become one summary: "You have 5 unread notifications" and the
+ * latest titles, opening the notifications page. The API sends the unread count and the summary's
+ * title in the person's language with each push (PwaWebPushNotification).
+ */
+const SUMMARY_TAG = 'summary'
+const MAX_SEPARATE = 2
+const SUMMARY_LINES = 4
+const ICON = '/img/icons/icon-192x192.png'
+// status-bar icon: Android uses only its transparency, so it must be a white shape on transparent
+const STATUS_ICON = '/img/icons/badge-96x96.png'
+
+async function showPush(payload) {
+  const title = payload.title || 'Scheduler'
+  const data = payload.data || {}
+  const icon = payload.icon || ICON
+  const badge = payload.badge || STATUS_ICON
+
+  const all = await self.registration.getNotifications()
+  // the same notification pushed again replaces itself (same tag): not counted twice
+  const separate = all.filter((item) => item.tag !== SUMMARY_TAG && item.tag !== payload.tag)
+  const summary = all.find((item) => item.tag === SUMMARY_TAG)
+
+  if (!summary && separate.length < MAX_SEPARATE) {
+    return self.registration.showNotification(title, { body: payload.body || '', icon, badge, tag: payload.tag, data })
+  }
+
+  // newest first: this one, the ones on screen, then those already in the summary
+  const titles = [title, ...separate.map((item) => item.title), ...((summary && summary.data && summary.data.titles) || [])]
+  separate.forEach((item) => item.close())
+  const count = Number.isFinite(data.unread) && data.unread > 0 ? data.unread : titles.length
+
+  return self.registration.showNotification(
+    (data.summary_title || ':count').replace(':count', String(count)),
+    {
+      body: titles.slice(0, SUMMARY_LINES).join('\n'),
+      icon,
+      badge,
+      tag: SUMMARY_TAG,
+      renotify: true, // a new one arrived: sound / vibrate again
+      data: { url: '/notifications', titles: titles.slice(0, 20) },
+    }
+  )
+}
+
+/** The unread count on the installed app's icon (Android, iOS 16.4+, desktop); ignored elsewhere. */
+function updateIconBadge(unread) {
+  if (!Number.isFinite(unread) || !self.navigator || !self.navigator.setAppBadge) return Promise.resolve()
+  return (unread > 0 ? self.navigator.setAppBadge(unread) : self.navigator.clearAppBadge()).catch(() => {})
+}
+
 self.addEventListener('push', (event) => {
   let payload = {}
 
@@ -9,17 +61,9 @@ self.addEventListener('push', (event) => {
     payload = { title: 'Scheduler', body: event.data ? event.data.text() : '' }
   }
 
-  const title = payload.title || 'Scheduler'
-
   event.waitUntil(Promise.all([
-    self.registration.showNotification(title, {
-      body: payload.body || '',
-      icon: payload.icon || '/img/icons/icon-192x192.png',
-      // status-bar icon: Android uses only its transparency, so it must be a white shape on transparent
-      badge: payload.badge || '/img/icons/badge-96x96.png',
-      tag: payload.tag,
-      data: payload.data || {},
-    }),
+    showPush(payload),
+    updateIconBadge(payload.data && payload.data.unread),
     // something changed: open copies of the app refresh their saved agenda and counters
     self.clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((windows) => windows.forEach((client) => client.postMessage({ type: 'push' }))),

@@ -121,9 +121,10 @@
             class="rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500">
             {{ iCancelled ? t('schedule.joinAgain') : t('schedule.join') }}
           </button>
-          <button v-if="schedule.can.update" type="button" @click="router.push({ name: 'ScheduleEdit', params: { id: schedule.id } })"
+          <!-- once it started, only its description: the same page with the rest locked -->
+          <button v-if="schedule.can.update || schedule.can.update_description" type="button" @click="router.push({ name: 'ScheduleEdit', params: { id: schedule.id } })"
             class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
-            {{ t('schedule.edit') }}
+            {{ schedule.can.update ? t('schedule.edit') : t('schedule.editDescription') }}
           </button>
           <template v-if="schedule.can.approve">
             <button type="button" @click="decide('reject')"
@@ -179,7 +180,7 @@ const period = computed(() => schedule.value
 const hasActions = computed(() => {
   const can = schedule.value?.can
   if (!can || !online.value) return false
-  return can.update || can.cancel || can.not_shown || can.approve || can.join || can.leave
+  return can.update || can.update_description || can.cancel || can.not_shown || can.approve || can.join || can.leave
 })
 const online = computed(() => !schedule.value?.offline && connection.status !== 'offline')
 // the signed-in user cancelled their attendance (they can join again before it starts)

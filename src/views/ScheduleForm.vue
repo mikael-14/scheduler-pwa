@@ -26,8 +26,14 @@
         {{ t('schedule.offlineHint') }}
       </p>
 
+      <!-- started: only the description changes (people who did not come are marked on its page) -->
+      <p v-if="notesOnly"
+        class="rounded-lg bg-slate-100 p-3 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+        {{ t('schedule.startedOnlyDescription') }}
+      </p>
+
       <!-- Type -->
-      <fieldset>
+      <fieldset :disabled="notesOnly">
         <legend class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('schedule.type') }}</legend>
         <div class="mt-2 grid gap-2 sm:grid-cols-2">
           <label v-for="option in bookableTypes" :key="option.id" :class="['flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition',
@@ -98,14 +104,18 @@
         <div :class="['grid gap-4', type.range && allDayOffered ? 'sm:grid-cols-[1fr_1fr_auto]' : 'sm:grid-cols-2']">
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             {{ t('schedule.start') }}
-            <input v-model="form.start" :type="form.all_day ? 'date' : 'datetime-local'" step="300" required
-              :min="limits.min" :max="limits.max" :class="inputClass" :disabled="timesLocked" />
+            <!-- keyed on the mode: a fresh input takes the new type before its value, else the browser
+                 drops a date put into a datetime-local field (and the reverse) and shows it empty -->
+            <input :key="form.all_day ? 'start-date' : 'start-datetime'" v-model="form.start"
+              :type="form.all_day ? 'date' : 'datetime-local'" step="300" required
+              :min="limits.min" :max="limits.max" :class="inputClass" :disabled="timesLocked || notesOnly" />
             <FieldError :errors="fieldErrors('start')" />
           </label>
           <label v-if="type.range" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
             {{ t('schedule.end') }}
-            <input v-model="form.end" :type="form.all_day ? 'date' : 'datetime-local'" step="300" required
-              :min="form.start || limits.min" :max="limits.max" :class="inputClass" :disabled="timesLocked" />
+            <input :key="form.all_day ? 'end-date' : 'end-datetime'" v-model="form.end"
+              :type="form.all_day ? 'date' : 'datetime-local'" step="300" required
+              :min="form.start || limits.min" :max="limits.max" :class="inputClass" :disabled="timesLocked || notesOnly" />
             <FieldError :errors="fieldErrors('end')" />
           </label>
           <div v-if="allDayOffered" class="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -113,8 +123,8 @@
             <!-- same height as the date inputs (p-2 + text-sm + border), so the switch lines up with them -->
             <div class="mt-1 flex h-[38px] items-center">
               <button type="button" role="switch" :aria-checked="form.all_day" aria-labelledby="all-day-label"
-                @click="setAllDay(!form.all_day)"
-                :class="['relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900', form.all_day ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']">
+                @click="setAllDay(!form.all_day)" :disabled="notesOnly"
+                :class="['relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900', form.all_day ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700']">
                 <span
                   :class="['inline-block h-5 w-5 rounded-full bg-white shadow transition', form.all_day ? 'translate-x-5' : 'translate-x-0.5']"></span>
               </button>
@@ -128,7 +138,7 @@
       <template v-if="!slotMode">
 
       <!-- Owner: for people who may book for others (new) / hand a schedule over (edit) -->
-      <div v-if="choosesOwner" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+      <div v-if="choosesOwner && !notesOnly" class="text-sm font-medium text-slate-700 dark:text-slate-300">
         <label for="schedule-owner">{{ t('schedule.owner') }}</label>
         <PersonSelect id="schedule-owner" v-model="form.user_id" :people="options.people"
           :none="{ label: t('schedule.ownerMe'), name: me?.name ?? t('schedule.ownerMe'), avatar_url: me?.avatar_url }"
@@ -136,8 +146,8 @@
         <FieldError :errors="errors.user_id" />
       </div>
 
-      <!-- Participants -->
-      <div>
+      <!-- Participants (fixed once it started) -->
+      <div v-if="!notesOnly">
         <p class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('schedule.participants') }}</p>
         <div v-if="selectedPeople.length" class="mt-2 flex flex-wrap gap-1.5">
           <button v-for="person in selectedPeople" :key="person.id" type="button" @click="toggleParticipant(person.id)"
@@ -281,6 +291,8 @@ const type = computed(() => options.value?.types.find((option) => option.id === 
 const slotMode = computed(() => !isEdit.value && !!type.value?.uses_slots)
 // a schedule booked on a slot keeps the slot's times
 const timesLocked = computed(() => isEdit.value && !!type.value?.uses_slots)
+// started (without update_past_schedule): only the description and the internal note change
+const notesOnly = ref(false)
 const slots = ref<ScheduleSlot[]>([])
 const slotsLoading = ref(false)
 const slotsError = ref<string | null>(null)
@@ -439,10 +451,11 @@ async function load() {
     options.value = formOptions
 
     if (schedule) {
-      if (!schedule.can.update) {
+      if (!schedule.can.update && !schedule.can.update_description) {
         router.replace({ name: 'ScheduleDetail', params: { id: schedule.id } })
         return
       }
+      notesOnly.value = !schedule.can.update
       form.schedule_type_id = schedule.schedule_type_id
       originalTypeId.value = schedule.schedule_type_id
       form.all_day = schedule.all_day
@@ -453,7 +466,7 @@ async function load() {
       form.internal_note = schedule.internal_note ?? ''
       form.user_id = formOptions.can.hand_over ? schedule.user_id : null
       form.participants = schedule.schedule_users.map((participant) => participant.user_id)
-      notesOpen.value = notesFilled.value
+      notesOpen.value = notesOnly.value || notesFilled.value
     } else {
       // a link can pick the type (e.g. a "nobody yet for Walks" alert), if it is still active
       const wanted = Number(route.query.type)
@@ -465,6 +478,13 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+/** Started: the API takes only the description (and the staff's internal note). */
+function notesPayload(): Partial<ScheduleInput> {
+  const input: Partial<ScheduleInput> = { description: form.description.trim() || null }
+  if (options.value?.can.internal_note) input.internal_note = form.internal_note.trim() || null
+  return input
 }
 
 function payload(): ScheduleInput {
@@ -514,13 +534,14 @@ async function takeSlot() {
 async function submit() {
   if (saving.value || !type.value) return
   if (slotMode.value) return takeSlot()
-  errors.value = localErrors()
+  // the times are not sent once it started, so they are not checked either
+  errors.value = notesOnly.value ? {} : localErrors()
   if (Object.keys(errors.value).length) return
 
   saving.value = true
   try {
     const saved = isEdit.value
-      ? await schedulesApi.updateSchedule(route.params.id as string, payload())
+      ? await schedulesApi.updateSchedule(route.params.id as string, notesOnly.value ? notesPayload() : payload())
       : await schedulesApi.createSchedule(payload())
     toast.success(t(isEdit.value ? 'schedule.saved' : 'schedule.created'))
     router.replace({ name: 'ScheduleDetail', params: { id: saved.id } })

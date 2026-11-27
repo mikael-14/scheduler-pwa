@@ -1,5 +1,6 @@
 import axiosInstance from '../config/axios';
 import { useAuthStore } from '../stores/auth';
+import { forgetDeviceLocale } from '../i18n';
 import type { LoginCredentials, RegisterCredentials, AuthResponse, User } from '../types/auth';
 
 export const authApi = {
@@ -7,6 +8,8 @@ export const authApi = {
     const response = await axiosInstance.post('/auth/login', credentials);
     const { token, user, permissions } = response.data;
     const authStore = useAuthStore();
+    // a new sign-in starts in the profile language
+    forgetDeviceLocale();
     authStore.setToken(token);
     authStore.setUser(user);
     authStore.setPermissions(permissions);
@@ -17,6 +20,7 @@ export const authApi = {
     const response = await axiosInstance.post('/auth/register', credentials);
     const { token, user } = response.data;
     const authStore = useAuthStore();
+    forgetDeviceLocale();
     authStore.setToken(token);
     authStore.setUser(user);
     return response.data;

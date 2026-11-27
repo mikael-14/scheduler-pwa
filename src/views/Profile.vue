@@ -78,6 +78,7 @@
                 <option value="pt">Português</option>
                 <option value="en">English</option>
               </select>
+              <p class="text-xs font-normal text-slate-500 dark:text-slate-400">{{ t('profile.languageHint') }}</p>
             </label>
 
             <div class="flex justify-end pt-4">
@@ -201,7 +202,7 @@ import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
 import { useDialogStore } from '../stores/dialog'
 import { authApi, type DeviceSession } from '../api/auth'
-import { intlLocale, t } from '../i18n'
+import { forgetDeviceLocale, intlLocale, setLocale, t } from '../i18n'
 import { apiErrorMessage, isNetworkError } from '../utils/apiError'
 import FieldError from '../components/common/FieldError.vue'
 import OfflineNotice from '../components/common/OfflineNotice.vue'
@@ -244,6 +245,8 @@ const updateProfile = async () => {
   savingProfile.value = true
   profileErrors.value = {}
   const changingEmail = emailChanged.value
+  // a new profile language also becomes this device's (over a header switch choice)
+  const changingLanguage = profile.language !== (user.value?.language || (user.value as any)?.locale)
   try {
     await authApi.updateProfile({
       name: profile.name,
@@ -251,6 +254,10 @@ const updateProfile = async () => {
       language: profile.language,
       ...(changingEmail && hasPassword.value ? { current_password: profile.currentPassword } : {}),
     } as any)
+    if (changingLanguage) {
+      forgetDeviceLocale()
+      setLocale(profile.language)
+    }
     profile.currentPassword = ''
     if (changingEmail) {
       // the new address must be confirmed before the app opens again

@@ -19,9 +19,21 @@ function readStoredLocale(): Locale {
   return DEFAULT_LOCALE
 }
 
+// Set while the language was picked with the header switch: this device keeps it over the
+// profile language until the user signs out (the profile language is for notifications and email)
+const DEVICE_CHOICE_KEY = 'languageChosenOnDevice'
+
+function hasDeviceChoice(): boolean {
+  try {
+    return localStorage.getItem(DEVICE_CHOICE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 /**
- * The language in use. Guests get the last one they used (default Portuguese);
- * once a user is signed in, their profile language replaces it (see the auth store).
+ * The language in use. Guests get the last one they used (default Portuguese); once a user
+ * is signed in, their profile language replaces it, unless this device picked its own.
  */
 export const locale = ref<Locale>(readStoredLocale())
 
@@ -43,6 +55,31 @@ export function setLocale(next: unknown): void {
   }
 }
 
+/** The header switch: only this device, kept until sign-out; the profile is not changed. */
+export function chooseDeviceLocale(next: unknown): void {
+  if (!isLocale(next)) return
+  setLocale(next)
+  try {
+    localStorage.setItem(DEVICE_CHOICE_KEY, '1')
+  } catch {
+    /* ignore */
+  }
+}
+
+/** The signed-in user's profile language: applied unless this device picked its own. */
+export function applyProfileLocale(next: unknown): void {
+  if (!hasDeviceChoice()) setLocale(next)
+}
+
+/** Sign-in, sign-out or a language saved on the profile: the profile language applies again. */
+export function forgetDeviceLocale(): void {
+  try {
+    localStorage.removeItem(DEVICE_CHOICE_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Translate a key. Reads `locale`, so templates re-render when the language changes. */
 export function t(key: string, params: Record<string, string | number> = {}): string {
   const template = messages[locale.value][key] ?? messages.en[key] ?? key
@@ -56,5 +93,5 @@ export function intlLocale(): string {
 }
 
 export function useI18n() {
-  return { t, locale, setLocale, intlLocale }
+  return { t, locale, setLocale, chooseDeviceLocale, intlLocale }
 }

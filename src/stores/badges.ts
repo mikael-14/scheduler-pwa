@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { notificationsApi } from '../api/notifications'
 import { schedulesApi } from '../api/schedules'
 import { useAuthStore } from './auth'
@@ -32,5 +32,27 @@ export const useBadgesStore = defineStore('badges', () => {
     return refreshing
   }
 
+  // the same count on the installed app's icon (the service worker sets it when a push arrives);
+  // all read: the phone's notifications of this app go too, they are dealt with
+  watch(unreadNotifications, (count) => {
+    syncIconBadge(count)
+    if (count === 0) closeShownNotifications()
+  })
+
   return { unreadNotifications, pendingApprovals, refresh }
 })
+
+/** The unread count on the app icon (Android, iOS 16.4+, desktop installs); ignored elsewhere. */
+export function syncIconBadge(count: number): void {
+  if (!('setAppBadge' in navigator)) return
+  const done = count > 0 ? navigator.setAppBadge(count) : navigator.clearAppBadge()
+  done.catch(() => { /* not allowed here: the menu counter still shows it */ })
+}
+
+/** Removes this app's notifications from the phone's list (all read, or signed out). */
+export function closeShownNotifications(): void {
+  navigator.serviceWorker?.getRegistration()
+    .then((registration) => registration?.getNotifications())
+    .then((shown) => shown?.forEach((notification) => notification.close()))
+    .catch(() => { /* no service worker: nothing shown */ })
+}

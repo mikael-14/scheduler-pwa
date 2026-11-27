@@ -156,10 +156,9 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
-import { useToastStore } from './stores/toast'
-import { authApi } from './api/auth'
-import { useDark, useIntervalFn } from '@vueuse/core'
+import { useDark, useEventListener, useIntervalFn } from '@vueuse/core'
 import { useBadgesStore } from './stores/badges'
+import { useToastStore } from './stores/toast'
 import {
   HomeIcon,
   CalendarDaysIcon,
@@ -181,7 +180,7 @@ import InstallButton from './components/common/InstallButton.vue'
 import PushPrompt from './components/common/PushPrompt.vue'
 import ConnectionStatus from './components/common/ConnectionStatus.vue'
 import UserAvatar from './components/common/UserAvatar.vue'
-import { t, locale, setLocale } from './i18n'
+import { t, locale, chooseDeviceLocale } from './i18n'
 
 
 const authStore = useAuthStore()
@@ -198,7 +197,20 @@ useIntervalFn(() => {
 navigator.serviceWorker?.addEventListener('message', (event) => {
   if (event.data?.type === 'push') badges.refresh()
 })
-const toastStore = useToastStore()
+
+// Back online, or back on screen: count again, and say so when notifications came in meanwhile
+// (a push may never have reached a phone that was off; the list always has them)
+const catchUp = async () => {
+  if (document.visibilityState !== 'visible' || !navigator.onLine) return
+  const before = badges.unreadNotifications
+  await badges.refresh()
+  const now = badges.unreadNotifications
+  if (now > before && route.name !== 'Notifications') {
+    useToastStore().info(t('notifications.catchUp', { count: now }))
+  }
+}
+useEventListener(window, 'online', catchUp)
+useEventListener(document, 'visibilitychange', catchUp)
 const user = computed(() => authStore.user)
 const router = useRouter()
 const route = useRoute()
@@ -214,24 +226,11 @@ const languageOptions: Array<{ value: 'pt' | 'en'; label: string }> = [
   { value: 'en', label: 'English' }
 ]
 
-const setLanguage = async (language: 'pt' | 'en') => {
-  if (!user.value) return
-
-  // Switch immediately, roll back if the profile could not be saved
-  const previousLanguage = locale.value
-  setLocale(language)
-
-  try {
-    await authApi.updateProfile({ language })
-  } catch (error) {
-    setLocale(previousLanguage)
-    toastStore.addToast(t('language.saveFailed'), 'error')
-  }
-}
-
-const selectLanguage = async (language: 'pt' | 'en') => {
+// Only this device, until sign-out: other sessions keep their language, and notifications and
+// email keep the profile language (changed on the Profile page)
+const selectLanguage = (language: 'pt' | 'en') => {
   languageMenuOpen.value = false
-  await setLanguage(language)
+  chooseDeviceLocale(language)
 }
 
 const isDark = useDark()
